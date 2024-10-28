@@ -8,3 +8,9 @@ The Sports Tournament Management System (STMS) helps the above-mentioned organiz
 A feature that makes the STMS unique is the usage of JSON for storing each sport rules. The JSON file that will be stored in the Sports table will hold rules for each sport. This makes it easy to adjust or add rules without having to redesign the database. STMS allows adding, updating, or removing records, viewing specific player performances at a match, pulling up player stats and match results, managing tournament schedules, and keeping team rosters organized.
  
 Overall, the proposed STMS database aims to solve the problems sport tournament hosts may face.
+
+Team:
+Utku Ceylan
+Kıvanç Taş
+Ali Berk Karaarslan
+Mustafa Tufan
