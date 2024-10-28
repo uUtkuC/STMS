@@ -10,7 +10,7 @@ A feature that makes the STMS unique is the usage of JSON for storing each sport
 Overall, the proposed STMS database aims to solve the problems sport tournament hosts may face.
 
 Team:
-Utku Ceylan
+Utku Ceylan\n
 Kıvanç Taş
 Ali Berk Karaarslan
 Mustafa Tufan
