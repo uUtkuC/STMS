@@ -1,5 +1,6 @@
-# STSM
-DatabaseProject- bil372
+# Sports Tournament Management System (STMS)
+
+**BİL372 - Database Project**
 
 An international sports tournament host needs a reliable system to organize and hold records of its tournaments, participating teams, players, scores and related player and team information. The proposed project aims to solve this problem.
 
@@ -9,8 +10,10 @@ A feature that makes the STMS unique is the usage of JSON for storing each sport
  
 Overall, the proposed STMS database aims to solve the problems sport tournament hosts may face.
 
-Team:
--Utku Ceylan
--Kıvanç Taş
--Ali Berk Karaarslan
--Mustafa Tufan
+
+## Team
+
+- [Utku Ceylan](https://www.github.com/uUtkuC)
+- [Kıvanç Taş](https://www.github.com/ghkivanc)
+- [Ali Berk Karaarslan](https://www.github.com/AliBerkKaraarslan)
+- [Mustafa Tufan](https://www.github.com/Mustafa-Tufan)
