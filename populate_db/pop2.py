@@ -1,12 +1,13 @@
-import random as rand
-from sqlalchemy import text, create_engine, Table, MetaData
-import datetime
-import pandas as pd
+import mysql.connect
 
-# Define database connection string and table names
-database = "mysql+pymysql://username:password@localhost:utku/bil372"
-engine = create_engine(database)
-metadata = MetaData()
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    passwd="utku",
+    database = "STMS"
+)
+
+mycursor = mydb.cursor()
 
 # Load data and initialize variables
 names = pd.read_csv("name_surname.csv")
@@ -29,7 +30,13 @@ for i, sport in enumerate(sports_names):
         "desc": f"Description for {sport}",
         "rules": {"general_rules": f"Rules for {sport}"}
     })
-
+# Insert sports data
+for row in sports_rows:
+    mycursor.execute(
+        "INSERT INTO Sports (sport_id, name, description, rules) VALUES (%s, %s, %s, %s)",
+        (row["sport_id"], row["name"], row["desc"], row["rules"])
+    )
+mydb.commit()
 # Populate tournaments table
 tournaments_rows = []
 for i in range(num_tournaments):
@@ -44,6 +51,13 @@ for i in range(num_tournaments):
         "end_date": end_date,
         "location": f"Location {i + 1}"
     })
+for row in tournaments_rows:
+    mycursor.execute(
+    "INSERT INTO Tournaments (tournament_id, name, sport_id, start_date, end_date, location) VALUES (%s, %s, %s, %s, %s, %s)",
+    (row["tournament_id"], row["name"], row["sport_id"], row["start_date"], row["end_date"], row["location"])
+    )
+mydb.commit()
+
 teams_rows = []
 team_count = 0
 for i, tournament in enumerate(tournaments_rows):
@@ -59,7 +73,13 @@ for i, tournament in enumerate(tournaments_rows):
             "tournament_id":i
         })
         team_count += 1
-
+# Insert teams data
+for row in teams_rows:
+    mycursor.execute(
+        "INSERT INTO Teams (team_id, name, coach, founded_year, tournament_id) VALUES (%s, %s, %s, %s, %s)",
+        (row["team_id"], row["name"], row["coach"], row["founded_year"], row["tournament_id"])
+    )
+mydb.commit()
 # Populate players table
 players_rows = []
 players_in_teams = []
@@ -80,7 +100,13 @@ for i, team in enumerate(teams_rows):
         })
         players_temp.append(player_count)
     players_in_teams.append(players_temp)
-
+# Insert players data
+for row in players_rows:
+    mycursor.execute(
+        "INSERT INTO Players (player_id, first_name, last_name, date_of_birth, matches_played, team_id) VALUES (%s, %s, %s, %s, %s, %s)",
+        (row["player_id"], row["first_name"], row["last_name"], row["date_of_birth"], row["matches_played"], row["team_id"])
+    )
+mydb.commit()
 # Populate referees table
 referees_rows = []
 for ref_id in range(1, 21):  # Assume 20 referees
@@ -91,7 +117,13 @@ for ref_id in range(1, 21):  # Assume 20 referees
         "experience_years": rand.randint(1, 30),
         "matches_officiated": rand.randint(10, 200)
     })
-
+# Insert referees data
+for row in referees_rows:
+    mycursor.execute(
+        "INSERT INTO Referees (referee_id, first_name, last_name, experience_years, matches_officiated) VALUES (%s, %s, %s, %s, %s)",
+        (row["referee_id"], row["first_name"], row["last_name"], row["experience_years"], row["matches_officiated"])
+    )
+mydb.commit()
 # Populate coaches table
 coaches_rows = []
 for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
@@ -103,7 +135,13 @@ for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
         "currently_associated_team": rand.randint(0, team_count - 1),
         "matches_coached": rand.randint(20, 200)
     })
-
+# Insert coaches data
+for row in coaches_rows:
+    mycursor.execute(
+        "INSERT INTO Coaches (coach_id, first_name, last_name, experience_years, currently_associated_team, matches_coached) VALUES (%s, %s, %s, %s, %s, %s)",
+        (row["coach_id"], row["first_name"], row["last_name"], row["experience_years"], row["currently_associated_team"], row["matches_coached"])
+    )
+mydb.commit()
 # Populate matches table
 matches_rows = []
 teams_in_matches = []
@@ -121,7 +159,13 @@ for i, tournament in enumerate(tournaments_rows):
         })
         teams_in_matches.append(matches_rows[-1]["participating_team_id"]);
         match_count += 1
-
+# Insert matches data
+for row in matches_rows:
+    mycursor.execute(
+        "INSERT INTO Matches (match_id, tournament_id, participating_team_id, referee_id, match_date, location) VALUES (%s, %s, %s, %s, %s, %s)",
+        (row["match_id"], row["tournament_id"], row["participating_team_id"], row["referee_id"], row["match_date"], row["location"])
+    )
+mydb.commit()
 # Populate player_stats table
 #this is all wrong this table should be match results. player stats should go under this part
 match_results_rows = []
@@ -136,6 +180,13 @@ for i, matches in enumerate(matches_rows):
             "winner_team_id": rand.choice([k for k in range(len(teams_rows))])#missing info should be match->tournament->team->player holding extra arrays would work
         })
 
+# Insert match results data
+for row in match_results_rows:
+    mycursor.execute(
+        "INSERT INTO Match_Results (result_id, match_id, team_results, winner_team_id) VALUES (%s, %s, %s, %s)",
+        (row["result_id"], row["match_id"], row["team_results"], row["winner_team_id"])
+    )
+mydb.commit()
 player_stats_rows = []
 stat_count = 0
 for i, matches in enumerate(matches_rows):
@@ -148,34 +199,12 @@ for i, matches in enumerate(matches_rows):
             "score": rand.randint(0, 100)#missing info should be match->tournament->team->player holding extra arrays would work
         })
 
-# Insert data into tables
-with engine.connect() as connection:
-    # Insert sports
-    connection.execute(sports.insert(), sports_rows)
-
-    # Insert tournaments
-    connection.execute(tournaments.insert(), tournaments_rows)
-
-    # Insert teams
-    connection.execute(teams.insert(), teams_rows)
-
-    # Insert players
-    connection.execute(Table("Players", metadata, autoload_with=engine).insert(), players_rows)
-
-    # Insert referees
-    connection.execute(Table("Referees", metadata, autoload_with=engine).insert(), referees_rows)
-
-    # Insert coaches
-    connection.execute(Table("Coaches", metadata, autoload_with=engine).insert(), coaches_rows)
-
-    connection.execute(text("""ALTER TABLE Teams ADD CONSTRAINT fk_coach_id FOREIGN KEY (coach) REFERENCES Coaches(coach_id) ON DELETE SET NULL;"""))
-
-    # Insert matches
-    connection.execute(Table("Matches", metadata, autoload_with=engine).insert(), matches_rows)
-
-    # Insert player stats
-    connection.execute(Table("Player_Stats", metadata, autoload_with=engine).insert(), player_stats_rows)
-
-    connection.execute(Table("Match_Results", metadata, autoload_with=engine).insert(), match_results_rows)
+# Insert player stats data
+for row in player_stats_rows:
+    mycursor.execute(
+        "INSERT INTO Player_Stats (stat_id, match_id, player_id, score) VALUES (%s, %s, %s, %s)",
+        (row["stat_id"], row["match_id"], row["player_id"], row["score"])
+    )
+mydb.commit()
 
 print("Data populated successfully!")
