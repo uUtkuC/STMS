@@ -1,3 +1,5 @@
+CREATE DATABASE STMS;
+USE STMS;
 CREATE TABLE Sports (
     sport_id INT  PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -63,7 +65,7 @@ CREATE TABLE Player_Stats (
 CREATE TABLE Match_Results (
     result_id INT  PRIMARY KEY,
     match_id INT,
-    teams_results JSON,
+    team_results JSON,
     winner_team_id INT,
     FOREIGN KEY (match_id) REFERENCES Matches(match_id) ON DELETE SET NULL,
     FOREIGN KEY (winner_team_id) REFERENCES Teams(team_id) ON DELETE SET NULL

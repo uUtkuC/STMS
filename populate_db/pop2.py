@@ -1,4 +1,9 @@
-import mysql.connect
+import mysql.connector
+import pandas as pd
+import json
+import os
+import datetime
+import random as rand
 
 mydb = mysql.connector.connect(
     host="localhost",
@@ -7,19 +12,22 @@ mydb = mysql.connector.connect(
     database = "STMS"
 )
 
+current_pwd = os.getcwd()
+file_path = os.path.join(current_pwd, "name_surname.csv")
+print(f"Attempting to read file: {file_path}")
+
 mycursor = mydb.cursor()
 
+
+current_pwd = os.getcwd()
+
 # Load data and initialize variables
-names = pd.read_csv("name_surname.csv")
+names = pd.read_csv(current_pwd+"\\name_surname.csv")
 sports_names = ["baseball", "tennis", "basketball", "soccer"]
 num_tournaments = 10
 num_teams_total = 50
 sports_ids = list(range(len(sports_names)))
 
-# Reflect existing tables
-tournaments = Table("Tournaments", metadata, autoload_with=engine)
-sports = Table("Sports", metadata, autoload_with=engine)
-teams = Table("Teams", metadata, autoload_with=engine)
 
 # Populate sports table
 sports_rows = []
@@ -34,7 +42,7 @@ for i, sport in enumerate(sports_names):
 for row in sports_rows:
     mycursor.execute(
         "INSERT INTO Sports (sport_id, name, description, rules) VALUES (%s, %s, %s, %s)",
-        (row["sport_id"], row["name"], row["desc"], row["rules"])
+        (row["sport_id"], row["name"], row["desc"], json.dumps(row["rules"]))
     )
 mydb.commit()
 # Populate tournaments table
@@ -103,8 +111,8 @@ for i, team in enumerate(teams_rows):
 # Insert players data
 for row in players_rows:
     mycursor.execute(
-        "INSERT INTO Players (player_id, first_name, last_name, date_of_birth, matches_played, team_id) VALUES (%s, %s, %s, %s, %s, %s)",
-        (row["player_id"], row["first_name"], row["last_name"], row["date_of_birth"], row["matches_played"], row["team_id"])
+        "INSERT INTO Players (player_id, first_name, last_name, date_of_birth, team_id) VALUES (%s, %s, %s, %s, %s)",
+        (row["player_id"], row["first_name"], row["last_name"], row["date_of_birth"], row["team_id"])
     )
 mydb.commit()
 # Populate referees table
@@ -120,8 +128,8 @@ for ref_id in range(1, 21):  # Assume 20 referees
 # Insert referees data
 for row in referees_rows:
     mycursor.execute(
-        "INSERT INTO Referees (referee_id, first_name, last_name, experience_years, matches_officiated) VALUES (%s, %s, %s, %s, %s)",
-        (row["referee_id"], row["first_name"], row["last_name"], row["experience_years"], row["matches_officiated"])
+        "INSERT INTO Referees (referee_id, first_name, last_name, experience_years) VALUES (%s, %s, %s, %s)",
+        (row["referee_id"], row["first_name"], row["last_name"], row["experience_years"],)
     )
 mydb.commit()
 # Populate coaches table
@@ -138,8 +146,8 @@ for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
 # Insert coaches data
 for row in coaches_rows:
     mycursor.execute(
-        "INSERT INTO Coaches (coach_id, first_name, last_name, experience_years, currently_associated_team, matches_coached) VALUES (%s, %s, %s, %s, %s, %s)",
-        (row["coach_id"], row["first_name"], row["last_name"], row["experience_years"], row["currently_associated_team"], row["matches_coached"])
+        "INSERT INTO Coaches (coach_id, first_name, last_name, experience_years, currently_associated_team) VALUES (%s, %s, %s, %s, %s)",
+        (row["coach_id"], row["first_name"], row["last_name"], row["experience_years"], row["currently_associated_team"],)
     )
 mydb.commit()
 # Populate matches table
@@ -184,7 +192,7 @@ for i, matches in enumerate(matches_rows):
 for row in match_results_rows:
     mycursor.execute(
         "INSERT INTO Match_Results (result_id, match_id, team_results, winner_team_id) VALUES (%s, %s, %s, %s)",
-        (row["result_id"], row["match_id"], row["team_results"], row["winner_team_id"])
+        (row["result_id"], row["match_id"], json.dumps(row["team_results"]), row["winner_team_id"])
     )
 mydb.commit()
 player_stats_rows = []
