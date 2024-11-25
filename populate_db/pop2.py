@@ -202,6 +202,7 @@ for row in matches_rows:
         (row["match_id"], row["tournament_id"], row["participating_team_id"], row["referee_id"], row["match_date"], row["location"])
     )
 mydb.commit()
+
 # Populate player_stats table
 #this is all wrong this table should be match results. player stats should go under this part
 match_results_rows = []
