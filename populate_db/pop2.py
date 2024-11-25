@@ -12,6 +12,34 @@ mydb = mysql.connector.connect(
     database = "STMS"
 )
 
+# locations below
+tournament_location_dict = {0:"Ankara",
+                   1:"Dubai",
+                   2:"New York",
+                   3:"Sivas",
+                   4:"Arizona",
+                   5:"Berlin",
+                   6:"Tokyo",
+                   7:"Madrid",
+                   8:"Kiev",
+                   9:"Paris",
+                   10:"Internet"
+                   }
+
+
+# sport rules below
+sport_rules = {
+    "baseball": "Basketball is played by two teams of five players each on a rectangular court. The objective is to score by shooting a ball through the opponent's hoop. Players dribble to move the ball and pass to teammates. The game consists of four quarters, and the team with the most points wins.",
+    "tennis" : "Tennis is played by two players (singles) or four (doubles) on a rectangular court. Players use racquets to hit a ball over a net, aiming to score points by landing the ball in the opponent's court. Matches are divided into sets, and the first to win a specified number of sets wins.",
+    "basketball" : "Baseball is played by two teams of nine players each on a diamond-shaped field. Teams alternate between batting and fielding. The batting team aims to score runs by hitting the ball and running to bases, while the fielding team tries to get batters out. The team with the most runs after nine innings wins.",
+    "soccer" : "Soccer is played by two teams of eleven players on a rectangular field with goals at each end. Players use their feet to move a ball and score by getting it into the opponent's goal. Matches consist of two 45-minute halves, and the team with the most goals wins.",
+    "pubg E-tournament" : "PUBG E-tournament involves players competing solo or in teams on a virtual battleground. Participants must scavenge for weapons and resources while staying within a shrinking safe zone. The objective is to eliminate opponents and be the last player or team standing. Matches are timed, and points are awarded based on survival and kills."
+
+
+}
+# tournament names
+
+
 current_pwd = os.getcwd()
 file_path = os.path.join(current_pwd, "name_surname.csv")
 print(f"Attempting to read file: {file_path}")
@@ -23,7 +51,7 @@ current_pwd = os.getcwd()
 
 # Load data and initialize variables
 names = pd.read_csv(current_pwd+"\\name_surname.csv")
-sports_names = ["baseball", "tennis", "basketball", "soccer"]
+sports_names = ["baseball", "tennis", "basketball", "soccer","pubg E-tournament"]
 num_tournaments = 10
 num_teams_total = 50
 sports_ids = list(range(len(sports_names)))
@@ -36,7 +64,7 @@ for i, sport in enumerate(sports_names):
         "sport_id": i,
         "name": sport,
         "desc": f"Description for {sport}",
-        "rules": {"general_rules": f"Rules for {sport}"}
+        "rules": {"general_rules": sport_rules[sport]}
     })
 # Insert sports data
 for row in sports_rows:
@@ -53,11 +81,11 @@ for i in range(num_tournaments):
     sport_id = rand.choice(sports_ids)
     tournaments_rows.append({
         "tournament_id": i,
-        "name": f"Tournament {i + 1}",
+        "name": f"Tournament {i+1}",
         "sport_id": sport_id,
         "start_date": start_date,
         "end_date": end_date,
-        "location": f"Location {i + 1}"
+        "location": tournament_location_dict[i+1]
     })
 for row in tournaments_rows:
     mycursor.execute(
