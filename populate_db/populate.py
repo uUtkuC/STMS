@@ -62,9 +62,11 @@ for i, tournament in enumerate(tournaments_rows):
 
 # Populate players table
 players_rows = []
+players_in_teams = []
 player_count = 0
 for i, team in enumerate(teams_rows):
     num_players = rand.randint(11, 20)  # Teams have 11-20 players
+    players_temp = []
     for _ in range(num_players):
         player_count += 1
         dob = datetime.date(rand.randint(1980, 2005), rand.randint(1, 12), rand.randint(1, 28))
@@ -76,6 +78,8 @@ for i, team in enumerate(teams_rows):
             "matches_played": rand.randint(0, 100),
             "team_id":i
         })
+        players_temp.append(player_count)
+    players_in_teams.append(players_temp)
 
 # Populate referees table
 referees_rows = []
@@ -102,6 +106,7 @@ for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
 
 # Populate matches table
 matches_rows = []
+teams_in_matches = []
 match_count = 0
 for i, tournament in enumerate(tournaments_rows):
     num_matches = rand.randint(5, 15)  # Each tournament has 5-15 matches
@@ -114,10 +119,23 @@ for i, tournament in enumerate(tournaments_rows):
             "match_date": datetime.date(rand.randint(1980, 2024), rand.randint(1, 12), rand.randint(1, 28)),#make sure teams arent founded after this date
             "location": f"Stadium {match_count}"
         })
+        teams_in_matches.append(matches_rows[-1]["participating_team_id"]);
         match_count += 1
 
 # Populate player_stats table
 #this is all wrong this table should be match results. player stats should go under this part
+match_results_rows = []
+result_count = 0
+for i, matches in enumerate(matches_rows):
+    for _ in range(2):  # Assume 2 player stats entries per match
+        result_count += 1
+        match_resutls_rows.append({
+            "result_id": result_count,
+            "match_id": i,
+            "team_results": {"goals": rand.randint(0, 5), "assists": rand.randint(0, 3)},
+            "winner_team_id": rand.choice([k for k in range(len(teams_rows))])#missing info should be match->tournament->team->player holding extra arrays would work
+        })
+
 player_stats_rows = []
 stat_count = 0
 for i, matches in enumerate(matches_rows):
@@ -126,8 +144,8 @@ for i, matches in enumerate(matches_rows):
         player_stats_rows.append({
             "stat_id": stat_count,
             "match_id": i,
-            "team_results": {"goals": rand.randint(0, 5), "assists": rand.randint(0, 3)},
-            "winner_team_id": rand.choice([k for k in range(len(teams_rows))])#missing info should be match->tournament->team->player holding extra arrays would work
+            "player_id": rand.choice([k for k in range(len(players_rows))])#add list of players
+            "score": rand.randint(0, 100)#missing info should be match->tournament->team->player holding extra arrays would work
         })
 
 # Insert data into tables
@@ -157,5 +175,7 @@ with engine.connect() as connection:
 
     # Insert player stats
     connection.execute(Table("Player_Stats", metadata, autoload_with=engine).insert(), player_stats_rows)
+
+    connection.execute(Table("Match_Results", metadata, autoload_with=engine).insert(), match_results_rows)
 
 print("Data populated successfully!")
