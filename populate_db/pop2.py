@@ -17,13 +17,14 @@ mydb = mysql.connector.connect(
 #her bir turnuva içine takımları koy, bu takımlar kendi içnide
 #arbitrary maç yapsın
 class Tournament:
-    def __init__(self, tournament_id, name, start_date, end_date, location,sport_type, esport=False):
+    def __init__(self, tournament_id, name, start_date, end_date,sport_id, location,sport_type, esport=False):
         self.tournament_id = tournament_id
         self.name = name
         self.start_date = start_date
         self.end_date = end_date
         self.location = location
         self.esport=esport
+        self.sport_id = sport_id
         self.sport_type = sport_type
         self.teams = []
         self.matches = []
@@ -162,6 +163,26 @@ tournaments_rows = []
 tournament_objs = []
 #add namings like UEFA, a special tennis tournament name, basketball name, soccer name etc
 
+# Populate sports table
+
+    # deleted this from below. why does sport has tournament_id? "tournament_id": rand.randint(0, num_tournaments - 1)
+# when sport id is auto-incremented do not push id into database
+sports_rows = []
+for i, sport in enumerate(sports_names):
+    sports_rows.append({
+        "sport_id": {i+1},
+        "name": sport,
+        "desc": f"Description for {sport}",
+        "rules": {"general_rules": sport_rules[sport]}
+    })
+# Insert sports data
+for row in sports_rows:
+    mycursor.execute(
+        "INSERT INTO Sports (name, description, rules) VALUES (%s, %s, %s)",
+        (row["name"], row["desc"], json.dumps(row["rules"]))
+    )
+mydb.commit()
+
 for i in range(num_tournaments):
     start_date = datetime.date(rand.randint(1980, 2024), rand.randint(1, 12), rand.randint(1, 28))
     end_date = start_date + datetime.timedelta(days=rand.randint(1, 365))
@@ -172,6 +193,7 @@ for i in range(num_tournaments):
         start_date=start_date,
         sport_type=instance_sport_name,
         end_date=end_date,
+        sport_id = sports_names.index(instance_sport_name)+1,
         location=tournament_location_dict[rand.randint(0, len(tournament_location_dict) - 2)]
     )
     # setting internet tournaments
@@ -192,31 +214,12 @@ for i in range(num_tournaments):
 # key autoincrement olunca, pk'yi kendisi artırıyor zaten. ONEMLI 1 'den baslıyor
 for tournament in tournament_objs:
     mycursor.execute(
-        "INSERT INTO Tournaments (name, start_date, end_date, location) VALUES (%s, %s, %s, %s)",
-        ( tournament.name, tournament.start_date, tournament.end_date, tournament.location)
+        "INSERT INTO Tournaments (name, start_date, end_date, location, sport_id) VALUES (%s, %s, %s, %s, %s)",
+        ( tournament.name, tournament.start_date, tournament.end_date, tournament.location, tournament.sport_id)
     )
 mydb.commit()
 
 
-# Populate sports table
-
-    # deleted this from below. why does sport has tournament_id? "tournament_id": rand.randint(0, num_tournaments - 1)
-# when sport id is auto-incremented do not push id into database
-sports_rows = []
-for i, sport in enumerate(sports_names):
-    sports_rows.append({
-        "sport_id": {i+1},
-        "name": sport,
-        "desc": f"Description for {sport}",
-        "rules": {"general_rules": sport_rules[sport]}
-    })
-# Insert sports data
-for row in sports_rows:
-    mycursor.execute(
-        "INSERT INTO Sports (name, description, rules) VALUES (%s, %s, %s)",
-        (row["name"], row["desc"], json.dumps(row["rules"]))
-    )
-mydb.commit()
 
 
 # # Populate teams table
