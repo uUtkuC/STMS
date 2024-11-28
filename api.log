@@ -103,3 +103,7 @@
 2024-11-28 22:07:38,700 INFO: Searching data in table coaches with parameters {} [in C:\dev\STSM\api.py:237]
 2024-11-28 22:07:42,457 INFO: Searching data in table coaches with parameters {'first_name': 'Lily'} [in C:\dev\STSM\api.py:237]
 2024-11-28 22:07:43,112 INFO: Searching data in table coaches with parameters {'first_name': 'Lily'} [in C:\dev\STSM\api.py:237]
+2024-11-28 22:50:59,378 INFO: Received request for /tables endpoint [in C:\dev\STSM\api.py:84]
+2024-11-28 22:50:59,380 INFO: Returning tables: ['coaches', 'matches', 'players', 'referees', 'referees_in_match', 'sports', 'team_coached', 'team_match_participation', 'team_tournament_participation', 'teams', 'tournaments'] [in C:\dev\STSM\api.py:95]
+2024-11-28 22:51:00,465 INFO: Fetching data for table: referees_in_match [in C:\dev\STSM\api.py:104]
+2024-11-28 22:51:00,466 INFO: Fetching schema for table: referees_in_match [in C:\dev\STSM\api.py:128]
