@@ -100,7 +100,7 @@ class Player:
         self.matches_played = matches_played
         self.team_id = team_id
 
-class Match:
+class Match: 
     def __init__(self, match_id, tournament_id, team1, team2, match_date, location):
         self.match_id = match_id
         self.tournament_id = tournament_id
@@ -465,7 +465,7 @@ for tourn in tournament_objs:
 for row in participated_rows:
     # Check if the combination of match_id and team_id already exists
     mycursor.execute(
-        "SELECT 1 FROM Team_match_participation WHERE match_id = %s AND team_id = %s",
+        "SELECT 1 FROM team_match_participation WHERE match_id = %s AND team_id = %s",
         (row["match_id"], row["team_id"])
     )
     if mycursor.fetchone() is None:  # Only insert if not already present
@@ -486,13 +486,13 @@ for tourn in tournament_objs:
 
         # Check if the referee is already assigned to this match
         mycursor.execute(
-            "SELECT 1 FROM Referees_in_Match WHERE match_id = %s AND referee_id = %s",
+            "SELECT 1 FROM referees_in_match WHERE match_id = %s AND referee_id = %s",
             (match.match_id, referee_id)
         )
         if mycursor.fetchone() is None:
             # If no result is found, insert the new entry
             mycursor.execute(
-                "INSERT INTO Referees_in_Match (match_id, referee_id) VALUES (%s, %s)",
+                "INSERT INTO referees_in_match (match_id, referee_id) VALUES (%s, %s)",
                 (match.match_id, referee_id)
             )
             have_referees_rows.append({
@@ -528,16 +528,27 @@ referee_count_dict = {
 #uyumlu sport tournamentları için eşlememiz lazım. referee_count_dict,
 # maç bası hakem sayisini gösteriyor.
 
-have_attended_rows = []
+have_referee_rows = []
 for tourn in tournament_objs:
     for match in tourn.matches:
-
+        required_referees = referee_count_dict.get(tourn.sport_type)
+        assigned_referees = []
+        for referee in referees_rows:
+            if referee.get('sport_type') == tourn.sport_type and len(assigned_referees) < required_referees:
+                assigned_referees.append(referee)    
+          # Check if the required number of referees are assigned
+        if len(assigned_referees) == required_referees:
+            for referee in assigned_referees:
+                have_referee_rows.append({
+                    "match_id": match.id,
+                    "referee_id": referee["referee_id"]
+                })
 
 # Insert have attended data
-for row in have_attended_rows:
+for row in have_referee_rows:
     mycursor.execute(
-        "INSERT INTO ATTEND (team_id, tournament_id) VALUES (%s, %s)",
-        (row["team_id"], row["tournament_id"])
+        "INSERT INTO referees_in_match (referee_id, match_id) VALUES (%s, %s)",
+        (row["referee_id"], row["match_id"])
     )
 mydb.commit()
 
