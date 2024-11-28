@@ -505,7 +505,6 @@ mydb.commit()
 # needed tables:
 # referees_in_match
 
-# team_coached
 #team_match participation -> bugfix probably
 #add caoches to teams.
 
@@ -553,5 +552,38 @@ for row in have_referee_rows:
 mydb.commit()
 
 
+# team_coached
+# Function to generate coaching assignment date range
+def generate_coaching_dates(founded_year):
+    coaching_begin_date = datetime(founded_year, rand.randint(1, 12), rand.randint(1, 28))
+    coaching_end_date = coaching_begin_date + timedelta(days=rand.randint(365, 365*5))  # Between 1 and 5 years
+    return coaching_begin_date.strftime('%Y-%m-%d'), coaching_end_date.strftime('%Y-%m-%d')
+
+# List to store the rows to be inserted into Team_Coached table
+team_coached_rows = []
+
+# Generate the coaching assignments
+for team in teams_rows:
+    coach_id = team["coach"]
+    team_id = team["team_id"]
+    coaching_begin_date, coaching_end_date = generate_coaching_dates(team["founded_year"])
+    
+    team_coached_rows.append({
+        "coach_id": coach_id,
+        "team_id": team_id,
+        "coaching_begin_date": coaching_begin_date,
+        "coaching_end_date": coaching_end_date
+    })
+
+# Insert into Team_Coached table
+for row in team_coached_rows:
+    mycursor.execute(
+        "INSERT INTO Team_Coached (coach_id, team_id, coaching_begin_date, coaching_end_date) "
+        "VALUES (%s, %s, %s, %s)",
+        (row["coach_id"], row["team_id"], row["coaching_begin_date"], row["coaching_end_date"])
+    )
+
+# Commit the changes
+mydb.commit()
 
 print("Data populated successfully!")
