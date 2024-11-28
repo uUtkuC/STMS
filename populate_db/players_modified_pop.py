@@ -345,9 +345,9 @@ for tourn in tournament_objs:
                     "height":random.randint(170, 220),
                     "weight":random.randint(65, 100),
                             "team_captain":#didnt check how the team object works but my suggestion is predetermining the teamcaptain for each t with a random index choice and doing player_index == rand_cpt_index ? true:false;
-                    "experience_years":experience_years
+                    "experience_years":experience_years,
                     "manager_name":rand.choice(names['first name'] + rand.choice(names['last name']),
-                    "total_minutes_played":experience_years*120*12*60*60,#yes this person practices for 12 hours every day for 120 days I dont care if it makes sense
+                    "total_minutes_played":experience_years*120*12*60,#yes this person practices for 12 hours every day for 120 days I dont care if it makes sense
                     "matches_played": rand.randint(0, 100),
                     "team_id":i
                 })
