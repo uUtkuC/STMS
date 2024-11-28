@@ -34,7 +34,7 @@ def initialize():
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="1234",
+            password="utku",
             database="stms"
         )
 

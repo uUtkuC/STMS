@@ -93,7 +93,7 @@ class Player:
         self.contract_end_date = contract_end_date
         self.height  = height
         self.weight = weight
-        self.team_captain = team_captian
+        self.team_captain = False
         self.experience_years = experience_years
         self.manager_name = manager_name
         self.total_minutes_played = total_minutes_played
@@ -225,12 +225,15 @@ for i in range(num_tournaments):
 tournament_objs[7].esport = True
 tournament_objs[7].location = "Internet"
 tournament_objs[7].sport_type = "pubg E-tournament"
+tournament_objs[7].name = f"Tournament of Pubg 1"
 tournament_objs[13].esport = True
 tournament_objs[13].location = "Internet"
 tournament_objs[13].sport_type = "pubg E-tournament"
+tournament_objs[13].name = f"Tournament of Pubg 2"
 tournament_objs[18].esport = True
 tournament_objs[18].location = "Internet"
 tournament_objs[18].sport_type = "pubg E-tournament"
+tournament_objs[18].name = f"Tournament of Pubg 3"
 
 for i in range(num_tournaments):
     print(tournament_objs[i])
@@ -269,8 +272,9 @@ for team in team_objs:
 mydb.commit()
 
 # her bir takımı turnuvalara ekle, eğer typeları uyusuyorsa
-for team in team_objs:
-    for tourn in tournament_objs:
+
+for tourn in tournament_objs:
+    for team in team_objs:
         if team.stype == tourn.sport_type and rand.choice([0, 1]):
             tourn.add_team(team)
 
@@ -281,17 +285,10 @@ for tourn in tournament_objs:
     # Insert teams into tournaments and schedule matches in the database
 for tourn in tournament_objs:
     for t in tourn.teams:
-        # Check if the team is already inserted in the tournament
         mycursor.execute(
-            "SELECT 1 FROM Team_tournament_participation WHERE tournament_id = %s AND team_id = %s",
+            "INSERT INTO Team_tournament_participation (tournament_id, team_id) VALUES (%s, %s)",
             (tourn.tournament_id, t.team_id)
         )
-        if mycursor.fetchone() is None:
-            # If no result is found, insert the new entry
-            mycursor.execute(
-                "INSERT INTO Team_tournament_participation (tournament_id, team_id) VALUES (%s, %s)",
-                (tourn.tournament_id, t.team_id)
-            )
 
 mydb.commit()
 
@@ -309,7 +306,7 @@ from datetime import datetime, timedelta
 # Generate a random date between two dates
 def random_date(start_date, end_date):
     delta = end_date - start_date
-    random_days = random.randint(0, delta.days)
+    random_days = rand.randint(0, delta.days)
     return start_date + timedelta(days=random_days)
 start_date = datetime(2006, 1, 1)
 end_date = datetime(2035, 12, 31)
@@ -322,16 +319,27 @@ players_rows = []
 players_in_teams = []
 player_count = 1
 for tourn in tournament_objs:
-    for t in tourn.teams:
-        num_players = rand.randint(11, 20)  # Teams have 11-20 players
+    for t in tourn.teams:  
+        # Get the team-specific player count based on the sport type
+        if t.stype == "pubg E-tournament":
+            num_players = 1  # PUBG can have 1 player per team
+        elif t.stype == "cycling":
+            num_players = 1  # Cycling can have 1 player per team
+        else:
+            # For traditional sports, teams will have 11-20 players
+            num_players = rand.randint(11, 20)
+
         players_temp = []
         #add the choice of captains index here
-        for _ in range(num_players):
+        # her takımın ilk oyuncusu kaptan olacak
+        temp = 0
+        for i in range(num_players):
+            
             player_count += 1
-            dob = datetime.date(rand.randint(1980, 2005), rand.randint(1, 12), rand.randint(1, 28))
-            start_date_player = random_date(start_date, end_date);
+            dob = datetime(rand.randint(1980, 2005), rand.randint(1, 12), rand.randint(1, 28))
+            start_date_player = random_date(start_date, end_date)
             experience_years = rand.randint(5, 30)
-                        players_rows.append({
+            players_rows.append({
                     "player_id": player_count,
                     "first_name": rand.choice(names["first name"]),
                     "last_name": rand.choice(names["last name"]),
@@ -339,26 +347,63 @@ for tourn in tournament_objs:
                     "country_of_origin":rand.choice(countries),
                     "age":rand.randint(18,35),
                     "market_value":rand.random()*100000,
-                    "salary":rand.random*10000,
+                    "salary":rand.random()*10000,
                     "contract_start_date":start_date_player,
                     "contract_end_date":random_date(start_date_player, end_date),
-                    "height":random.randint(170, 220),
-                    "weight":random.randint(65, 100),
-                            "team_captain":#didnt check how the team object works but my suggestion is predetermining the teamcaptain for each t with a random index choice and doing player_index == rand_cpt_index ? true:false;
+                    "height":rand.randint(170, 220),
+                    "weight":rand.randint(65, 100),
+                    "team_captain": False,
                     "experience_years":experience_years,
-                    "manager_name":rand.choice(names['first name'] + rand.choice(names['last name']),
-                    "total_minutes_played":experience_years*120*12*60,#yes this person practices for 12 hours every day for 120 days I dont care if it makes sense
+                    "manager_name":rand.choice(names['first name']) + rand.choice(names['last name']),
+                    "total_minutes_played":experience_years*120*12,#yes this person practices for 12 hours every day for 120 days I dont care if it makes sense
                     "matches_played": rand.randint(0, 100),
-                    "team_id":i
+                    "team_id":t.team_id
                 })
+            # Create a Player object from the dictionary
+            new_player = Player(
+                player_id=player_count,
+                first_name=rand.choice(names["first name"]),
+                last_name=rand.choice(names["last name"]),
+                date_of_birth=dob,
+                country_of_origin=rand.choice(countries),
+                age=rand.randint(18, 35),
+                market_value=rand.random() * 100000,
+                salary=rand.random() * 10000,
+                contract_start_date=start_date_player,
+                contract_end_date=random_date(start_date_player, end_date),
+                height=rand.randint(170, 220),
+                weight=rand.randint(65, 100),
+                team_captain=False, # if temp = 0, make captain
+                experience_years=experience_years,
+                manager_name=rand.choice(names['first name']) + rand.choice(names['last name']),
+                total_minutes_played=experience_years * 120 * 12,  # Yes, intense training
+                matches_played=rand.randint(0, 100),
+                team_id=t.team_id
+            )
+            if temp == 0:
+                new_player.team_captain = True
+            temp = temp+1
+            t.add_player(new_player)
             players_temp.append(player_count)
         players_in_teams.append(players_temp)
+
 # Insert players data
-for row in players_rows:
-    mycursor.execute(
-        "INSERT INTO Players (first_name, last_name, date_of_birth, team_id) VALUES (%s, %s, %s, %s)",
-        (row["first_name"], row["last_name"], row["date_of_birth"], row["team_id"])
-    )
+for tourn in tournament_objs:
+    for t in tourn.teams:
+        for p in t.players:
+              mycursor.execute(
+                "INSERT INTO Players (first_name, last_name, date_of_birth, team_id, country_of_origin, "
+                "age, market_value, salary, contract_start_date, contract_end_date, height, weight, "
+                "team_captain, experience_years, manager_name, total_minutes_played, matches_played) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    p.first_name, p.last_name, p.date_of_birth, t.team_id, p.country_of_origin,
+                    p.age, p.market_value, p.salary, p.contract_start_date, p.contract_end_date, p.height,
+                    p.weight, p.team_captain, p.experience_years, p.manager_name, p.total_minutes_played, 
+                    p.matches_played
+                )
+            )
+              
 mydb.commit()
 
 
@@ -369,7 +414,8 @@ for ref_id in range(1, 21):  # Assume 20 referees
         "referee_id": ref_id,
         "first_name": rand.choice(names["first name"]),
         "last_name": rand.choice(names["last name"]),
-        "experience_years": rand.randint(1, 30)
+        "experience_years": rand.randint(1, 30),
+        "sport_type" : rand.randint(1, 10)
     })
 # Insert referees data
 for row in referees_rows:
@@ -456,36 +502,45 @@ for tourn in tournament_objs:
 
 mydb.commit()
 
+# needed tables:
+# referees_in_match
 
-# # Populate attend table
-# have_attended_rows = []
-# for match in matches_rows:
-#     have_attended_rows.append({
-#         "team_id": team["team_id"],
-#         "tournament_id": rand.choice(tournaments_rows)["tournament_id"]
-#     })
-# # Insert have attended data
-# for row in have_attended_rows:
-#     mycursor.execute(
-#         "INSERT INTO ATTEND (team_id, tournament_id) VALUES (%s, %s)",
-#         (row["team_id"], row["tournament_id"])
-#     )
-# mydb.commit()
+# team_coached
+#team_match participation -> bugfix probably
+#add caoches to teams.
+
+referee_count_dict = {
+    "baseball": 4,            # 4 referees (umpires) in a typical baseball game (plate umpire + 3 base umpires)
+    "tennis": 1,              # 1 referee (chair umpire), though there may be line judges
+    "basketball": 3,          # 3 referees in a standard basketball game (1 lead, 2 trail)
+    "soccer": 4,              # 1 center referee, 2 assistant referees, 1 fourth official
+    "pubg E-tournament": 1,   # 1 referee
+    "rugby": 3,               # 1 referee and 2 touch judges (assistants)
+    "cricket": 3,             # 2 on-field umpires, 1 third umpire (for technology assistance)
+    "hockey": 2,              # 2 referees in field hockey (1 umpire per half)
+    "golf": 1,                # 1 referee (often an official who oversees the game, particularly for disputes)
+    "volleyball": 2,          # 1 first referee, 1 second referee (sometimes with line judges)
+    "cycling": 1              # 1 referee (official race director or commissaire)
+}
+
+# referees in match
+# refereelerin type'ları belirlendi üstte. referee.sport kullanarak,
+#uyumlu sport tournamentları için eşlememiz lazım. referee_count_dict,
+# maç bası hakem sayisini gösteriyor.
+
+have_attended_rows = []
+for tourn in tournament_objs:
+    for match in tourn.matches:
 
 
-# # Populate team_coached table
-# have_match_results_rows = []
-# for match in matches_rows:
-#     have_match_results_rows.append({
-#         "team_id": team["team_id"],
-#         "result_id": rand.choice(match_results_rows)["result_id"]
-#     })
-# # Insert have match results data
-# for row in have_match_results_rows:
-#     mycursor.execute(
-#         "INSERT INTO HAVE_MATCH_RESULTS (team_id, result_id) VALUES (%s, %s)",
-#         (row["team_id"], row["result_id"])
-#     )
-# mydb.commit()
+# Insert have attended data
+for row in have_attended_rows:
+    mycursor.execute(
+        "INSERT INTO ATTEND (team_id, tournament_id) VALUES (%s, %s)",
+        (row["team_id"], row["tournament_id"])
+    )
+mydb.commit()
+
+
 
 print("Data populated successfully!")
