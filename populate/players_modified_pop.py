@@ -247,6 +247,23 @@ mydb.commit()
 
 
 
+# Populate coaches table
+coaches_rows = []
+for coach_id in range(1, num_teams_total + 1):  # Assume 1 coach per tournament
+    coaches_rows.append({
+        "coach_id": coach_id,
+        "first_name": rand.choice(names["first name"]),
+        "last_name": rand.choice(names["last name"]),
+        "experience_years": rand.randint(1, 30),
+        "matches_coached": rand.randint(20, 200)
+    })
+# Insert coaches data
+for row in coaches_rows:
+    mycursor.execute(
+        "INSERT INTO Coaches (first_name, last_name, experience_years) VALUES (%s, %s, %s)",
+        (row["first_name"], row["last_name"], row["experience_years"])
+    )
+mydb.commit()
 
 # Populate teams table
 teams_rows = []
@@ -257,7 +274,7 @@ for i in range(num_teams_total):
     team = Team(
         team_id=i + 1,
         name=f"Team {i + 1}",
-        coach=None,
+        coach= i +1,
         founded_year=rand.randint(1900, 2024),
         stype=sports_names[rand.randint(0, len(sports_names) - 1)]
     )
@@ -426,24 +443,6 @@ for row in referees_rows:
 mydb.commit()
 
 
-# Populate coaches table
-coaches_rows = []
-for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
-    coaches_rows.append({
-        "coach_id": coach_id,
-        "first_name": rand.choice(names["first name"]),
-        "last_name": rand.choice(names["last name"]),
-        "experience_years": rand.randint(1, 30),
-        "matches_coached": rand.randint(20, 200)
-    })
-# Insert coaches data
-for row in coaches_rows:
-    mycursor.execute(
-        "INSERT INTO Coaches (first_name, last_name, experience_years) VALUES (%s, %s, %s)",
-        (row["first_name"], row["last_name"], row["experience_years"])
-    )
-mydb.commit()
-
 
 
 # Populate team_match_participation table
@@ -555,7 +554,7 @@ mydb.commit()
 # team_coached
 # Function to generate coaching assignment date range
 def generate_coaching_dates(founded_year):
-    coaching_begin_date = datetime(founded_year, rand.randint(1, 12), rand.randint(1, 28))
+    coaching_begin_date = datetime(founded_year+3, rand.randint(1, 12), rand.randint(1, 28))
     coaching_end_date = coaching_begin_date + timedelta(days=rand.randint(365, 365*5))  # Between 1 and 5 years
     return coaching_begin_date.strftime('%Y-%m-%d'), coaching_end_date.strftime('%Y-%m-%d')
 
@@ -563,10 +562,10 @@ def generate_coaching_dates(founded_year):
 team_coached_rows = []
 
 # Generate the coaching assignments
-for team in teams_rows:
-    coach_id = team["coach"]
-    team_id = team["team_id"]
-    coaching_begin_date, coaching_end_date = generate_coaching_dates(team["founded_year"])
+for team in team_objs:
+    coach_id = team.coach
+    team_id = team.team_id
+    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year)
     
     team_coached_rows.append({
         "coach_id": coach_id,
@@ -574,6 +573,38 @@ for team in teams_rows:
         "coaching_begin_date": coaching_begin_date,
         "coaching_end_date": coaching_end_date
     })
+
+for team in team_objs[i:num_teams_total//2]:
+    
+    coach_id = rand.randint(1,num_teams_total//2)
+    while coach_id == team.coach:
+        coach_id = rand.randint(1,num_teams_total//2) #we want different coaches
+
+    team_id = team.team_id
+    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year-3) #to make it applicable to another frunction
+    
+    team_coached_rows.append({
+        "coach_id": coach_id,
+        "team_id": team_id,
+        "coaching_begin_date": coaching_begin_date,
+        "coaching_end_date": coaching_end_date
+    })  
+
+for team in team_objs[i:num_teams_total//4]:
+    
+    coach_id = rand.randint(1,num_teams_total//4)
+    while coach_id == team.coach:
+        coach_id = rand.randint(1,num_teams_total//4) #we want different coaches
+
+    team_id = team.team_id
+    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year-3) #to make it applicable to another frunction
+    
+    team_coached_rows.append({
+        "coach_id": coach_id,
+        "team_id": team_id,
+        "coaching_begin_date": coaching_begin_date,
+        "coaching_end_date": coaching_end_date
+    })  
 
 # Insert into Team_Coached table
 for row in team_coached_rows:
