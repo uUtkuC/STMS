@@ -1,9 +1,16 @@
+############################################################
+#  Name: api.py
+#  Date: 28.11.2024       Authors: Ali Berk Karaarslan
+#  Description: API Server for STMS Database with Search Functionality
+############################################################
+
 from flask import Flask, request, jsonify
 import pymysql
 from pymysql.err import OperationalError, MySQLError
 import threading
 import logging
 from logging.handlers import RotatingFileHandler
+from queue import Queue
 
 app = Flask(__name__)
 
@@ -29,9 +36,6 @@ dbconfig = {
 }
 
 # Connection Pool Implementation
-# Since PyMySQL doesn't have built-in connection pooling, we'll implement a simple thread-safe pool.
-from queue import Queue
-
 class ConnectionPool:
     def __init__(self, maxsize=10):
         self.pool = Queue(maxsize)
@@ -224,6 +228,43 @@ def delete_data():
         return jsonify({'message': 'Data deleted successfully'}), 200
     except Exception as e:
         app.logger.error(f"Error deleting data from table {table_name}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Endpoint to search data in a table
+@app.route('/search/<table_name>', methods=['POST'])
+def search_data(table_name):
+    search_params = request.json  # Expecting a JSON object with search parameters
+    app.logger.info(f"Searching data in table {table_name} with parameters {search_params}")
+
+    try:
+        connection = get_db_connection()
+        if connection is None:
+            raise Exception("Failed to connect to the database")
+
+        with connection.cursor() as cursor:
+            # Build WHERE clause with LIKE operator for partial matching
+            where_clauses = []
+            for col, value in search_params.items():
+                where_clauses.append(f"`{col}` LIKE %({col})s")
+                search_params[col] = f"%{value}%"  # Add wildcards for partial matching
+
+            where_clause = " AND ".join(where_clauses)
+            sql = f"SELECT * FROM `{table_name}`"
+            if where_clause:
+                sql += f" WHERE {where_clause}"
+
+            cursor.execute(sql, search_params)
+            rows = cursor.fetchall()
+
+            cursor.execute(f"DESCRIBE `{table_name}`;")
+            columns_info = cursor.fetchall()
+            columns = [col['Field'] for col in columns_info]
+        connection_pool.release_connection(connection)
+
+        data = [row for row in rows]  # Rows are dictionaries
+        return jsonify({'columns': columns, 'data': data}), 200
+    except Exception as e:
+        app.logger.error(f"Error searching data in table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Error handler to catch all exceptions and return JSON responses
