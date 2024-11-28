@@ -283,56 +283,34 @@ for tourn in tournament_objs:
 mydb.commit()
 
 
-# # Populate matches table
-# matches_rows = []
-# teams_in_matches = []
-# match_count = 0
-# for i, tournament in enumerate(tournaments_rows):
-#     num_matches = rand.randint(5, 15)  # Each tournament has 5-15 matches
-#     for _ in range(num_matches):
-#         matches_rows.append({
-#             "match_id": match_count,
-#             "tournament_id": i,
-#             "match_date": datetime.date(rand.randint(1980, 2024), rand.randint(1, 12), rand.randint(1, 28)),#make sure teams arent founded after this date
-#             "location": f"Stadium {match_count}"
-#         })
-#         match_count += 1
-# # Insert matches data
-# for row in matches_rows:
-#     mycursor.execute(
-#         "INSERT INTO Matches (match_id, tournament_id, referee_id, match_date, location) VALUES (%s, %s, %s, %s, %s)",
-#         (row["match_id"], row["tournament_id"], row["referee_id"], row["match_date"], row["location"])
-#     )
-# mydb.commit()
-
-
-# # Populate players table
-# players_rows = []
-# players_in_teams = []
-# player_count = 0
-# for i, team in enumerate(teams_rows):
-#     num_players = rand.randint(11, 20)  # Teams have 11-20 players
-#     players_temp = []
-#     for _ in range(num_players):
-#         player_count += 1
-#         dob = datetime.date(rand.randint(1980, 2005), rand.randint(1, 12), rand.randint(1, 28))
-#         players_rows.append({
-#             "player_id": player_count,
-#             "first_name": rand.choice(names["first name"]),
-#             "last_name": rand.choice(names["last name"]),
-#             "date_of_birth": dob,
-#             "matches_played": rand.randint(0, 100),
-#             "team_id":i
-#         })
-#         players_temp.append(player_count)
-#     players_in_teams.append(players_temp)
-# # Insert players data
-# for row in players_rows:
-#     mycursor.execute(
-#         "INSERT INTO Players (player_id, first_name, last_name, date_of_birth, team_id) VALUES (%s, %s, %s, %s, %s)",
-#         (row["player_id"], row["first_name"], row["last_name"], row["date_of_birth"], row["team_id"])
-#     )
-# mydb.commit()
+# Populate players table
+players_rows = []
+players_in_teams = []
+player_count = 0
+for tourn in tournament_objs:
+    for t in tourn.teams:
+        num_players = rand.randint(11, 20)  # Teams have 11-20 players
+        players_temp = []
+        for _ in range(num_players):
+            player_count += 1
+            dob = datetime.date(rand.randint(1980, 2005), rand.randint(1, 12), rand.randint(1, 28))
+            players_rows.append({
+                    "player_id": player_count,
+                    "first_name": rand.choice(names["first name"]),
+                    "last_name": rand.choice(names["last name"]),
+                    "date_of_birth": dob,
+                    "matches_played": rand.randint(0, 100),
+                    "team_id":i
+                })
+            players_temp.append(player_count)
+        players_in_teams.append(players_temp)
+# Insert players data
+for row in players_rows:
+    mycursor.execute(
+        "INSERT INTO Players (player_id, first_name, last_name, date_of_birth, team_id) VALUES (%s, %s, %s, %s, %s)",
+        (row["player_id"], row["first_name"], row["last_name"], row["date_of_birth"], row["team_id"])
+    )
+mydb.commit()
 
 
 # Populate referees table
@@ -372,51 +350,8 @@ for row in coaches_rows:
 mydb.commit()
 
 
-# # Populate match_results table
-# #this is all wrong this table should be match results. player stats should go under this part
-# match_results_rows = []
-# result_count = 0
-# for i, matches in enumerate(matches_rows):
-#     for _ in range(2):  # Assume 2 player stats entries per match
-#         result_count += 1
-#         match_results_rows.append({
-#             "result_id": result_count,
-#             "match_id": i,
-#             "team_results": {"goals": rand.randint(0, 5), "assists": rand.randint(0, 3)},
-#             "winner_team_id": rand.choice([k for k in range(len(teams_rows))])#missing info should be match->tournament->team->player holding extra arrays would work
-#         })
-# # Insert match results data
-# for row in match_results_rows:
-#     mycursor.execute(
-#         "INSERT INTO Match_Results (result_id, match_id, team_results, winner_team_id) VALUES (%s, %s, %s, %s)",
-#         (row["result_id"], row["match_id"], json.dumps(row["team_results"]), row["winner_team_id"])
-#     )
-# mydb.commit()
 
-
-# # Populate player_stats table
-# player_stats_rows = []
-# stat_count = 0
-# for i, matches in enumerate(matches_rows):
-#     for _ in range(2):  # Assume 2 player stats entries per match
-#         stat_count += 1
-#         player_stats_rows.append({
-#             "stat_id": stat_count,
-#             "match_id": i,
-#             "player_id": rand.choice(players_rows)["player_id"],
-#             "score": rand.randint(0, 100)#missing info should be match->tournament->team->player holding extra arrays would work
-#         })
-
-# # Insert player stats data
-# for row in player_stats_rows:
-#     mycursor.execute(
-#         "INSERT INTO Player_Stats (stat_id, match_id, player_id, score) VALUES (%s, %s, %s, %s)",
-#         (row["stat_id"], row["match_id"], row["player_id"], row["score"])
-#     )
-# mydb.commit()
-
-
-# # Populate participated table
+# # Populate team_match_participation table
 # participated_rows = []
 # for match in matches_rows:
 #     # Select 2 random teams to participate in each match
@@ -480,7 +415,7 @@ mydb.commit()
 # mydb.commit()
 
 
-# # Populate have_match_results table
+# # Populate team_coached table
 # have_match_results_rows = []
 # for match in matches_rows:
 #     have_match_results_rows.append({
