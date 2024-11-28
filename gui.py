@@ -175,6 +175,7 @@ async def fetch_schema_async(table_name, scrollable_frame):
         root.after(0, show_error_message, f"API request failed: {e}")
 
 def create_fields(columns, scrollable_frame):
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button
     for i, col in enumerate(columns):
         col_name = col['Field']
         row, column = divmod(i, 2)
