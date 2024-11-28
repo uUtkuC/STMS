@@ -13,7 +13,7 @@ mydb = mysql.connector.connect(
     passwd="utku",
     database = "STMS"
 )
-
+g_match_id = 1
 #her bir turnuva içine takımları koy, bu takımlar kendi içnide
 #arbitrary maç yapsın
 class Tournament:
@@ -36,16 +36,19 @@ class Tournament:
         # Ensure each team plays at least one match with every other team
         for i in range(len(self.teams)):
             for j in range(i+1, len(self.teams)):
+                global g_match_id
                 match_date = self.start_date + datetime.timedelta(days=rand.randint(0, (self.end_date - self.start_date).days))
                 match = Match(
-                    match_id=len(self.matches)+1,
+                    match_id=g_match_id,
                     tournament_id=self.tournament_id,
                     team1=self.teams[i],
                     team2=self.teams[j],
                     match_date=match_date,
                     location=self.location
                 )
+                g_match_id = g_match_id +1
                 self.matches.append(match)
+
 
     def generate_matches(self):
         matches = []
@@ -286,7 +289,7 @@ mydb.commit()
 # Populate players table
 players_rows = []
 players_in_teams = []
-player_count = 0
+player_count = 1
 for tourn in tournament_objs:
     for t in tourn.teams:
         num_players = rand.randint(11, 20)  # Teams have 11-20 players
@@ -307,8 +310,8 @@ for tourn in tournament_objs:
 # Insert players data
 for row in players_rows:
     mycursor.execute(
-        "INSERT INTO Players (player_id, first_name, last_name, date_of_birth, team_id) VALUES (%s, %s, %s, %s, %s)",
-        (row["player_id"], row["first_name"], row["last_name"], row["date_of_birth"], row["team_id"])
+        "INSERT INTO Players (first_name, last_name, date_of_birth, team_id) VALUES (%s, %s, %s, %s)",
+        (row["first_name"], row["last_name"], row["date_of_birth"], row["team_id"])
     )
 mydb.commit()
 
@@ -351,25 +354,34 @@ mydb.commit()
 
 
 
-# # Populate team_match_participation table
-# participated_rows = []
-# for match in matches_rows:
-#     # Select 2 random teams to participate in each match
-#     participating_teams = rand.sample(teams_rows, 2)  # Randomly select 2 teams
+# Populate team_match_participation table
+participated_rows = []
 
-#     for team in participating_teams:
-#         participated_rows.append({
-#             "match_id": match["match_id"],
-#             "team_id": team["team_id"]
-#         })
-# # Insert participated data
-# for row in participated_rows:
-#     mycursor.execute(
-#         "INSERT INTO PARTICIPATED (match_id, team_id) VALUES (%s, %s)",
-#         (row["match_id"], row["team_id"])
-#     )
-# mydb.commit()
+for tourn in tournament_objs:
+    for match in tourn.matches:
+        # Insert both teams of the match into the team_match_participation table
+        participated_rows.append({
+            "match_id": match.match_id,
+            "team_id": match.team1.team_id
+        })
+        participated_rows.append({
+            "match_id": match.match_id,
+            "team_id": match.team2.team_id
+        })
 
+# Insert participation data without duplicates
+for row in participated_rows:
+    # Check if the combination of match_id and team_id already exists
+    mycursor.execute(
+        "SELECT 1 FROM Team_match_participation WHERE match_id = %s AND team_id = %s",
+        (row["match_id"], row["team_id"])
+    )
+    if mycursor.fetchone() is None:  # Only insert if not already present
+        mycursor.execute(
+            "INSERT INTO Team_match_participation (match_id, team_id) VALUES (%s, %s)",
+            (row["match_id"], row["team_id"])
+        )
+mydb.commit()
 
 # Populate have_referees table
 have_referees_rows = []
