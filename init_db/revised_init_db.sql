@@ -1,4 +1,4 @@
-DROP DATABASE STMS;
+DROP DATABASE IF EXISTS STMS;
 CREATE DATABASE STMS;
 USE STMS;
 -- Sports Table
@@ -33,7 +33,7 @@ CREATE TABLE Teams (
     team_id INT AUTO_INCREMENT PRIMARY KEY,
     coach INT,
     name VARCHAR(255) NOT NULL,
-    founded_year YEAR,
+    founded_year INT,
     FOREIGN KEY (coach) REFERENCES Coaches(coach_id)
 );
 

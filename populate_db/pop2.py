@@ -38,7 +38,7 @@ class Tournament:
             for j in range(i+1, len(self.teams)):
                 match_date = self.start_date + datetime.timedelta(days=rand.randint(0, (self.end_date - self.start_date).days))
                 match = Match(
-                    match_id=len(self.matches),
+                    match_id=len(self.matches)+1,
                     tournament_id=self.tournament_id,
                     team1=self.teams[i],
                     team2=self.teams[j],
@@ -64,10 +64,11 @@ class Tournament:
                 f"Teams: {teams_str}\n")
 
 class Team:
-    def __init__(self, team_id, name, coach, founded_year):
+    def __init__(self, team_id, name, coach,stype, founded_year):
         self.team_id = team_id
         self.name = name
         self.coach = coach
+        self.stype = stype
         self.founded_year = founded_year
         self.players = []
 
@@ -170,7 +171,7 @@ tournament_objs = []
 sports_rows = []
 for i, sport in enumerate(sports_names):
     sports_rows.append({
-        "sport_id": {i+1},
+        "sport_id": i+1,
         "name": sport,
         "desc": f"Description for {sport}",
         "rules": {"general_rules": sport_rules[sport]}
@@ -188,7 +189,7 @@ for i in range(num_tournaments):
     end_date = start_date + datetime.timedelta(days=rand.randint(1, 365))
     instance_sport_name = sports_names[rand.randint(0, len(sports_names) - 1)]
     tournament = Tournament(
-        tournament_id={i+1},
+        tournament_id=i+1,
         name=f"Tournament of {instance_sport_name} {i+1}",
         start_date=start_date,
         sport_type=instance_sport_name,
@@ -222,26 +223,85 @@ mydb.commit()
 
 
 
-# # Populate teams table
-# teams_rows = []
-# team_count = 0
+# Populate teams table
+teams_rows = []
+team_objs = []
+team_count = 0
+
+for i in range(num_teams_total):
+    team = Team(
+        team_id=i + 1,
+        name=f"Team {i + 1}",
+        coach=None,
+        founded_year=rand.randint(1900, 2024),
+        stype=sports_names[rand.randint(0, len(sports_names) - 1)]
+    )
+    team_objs.append(team)
+
+# Insert teams data
+for team in team_objs:
+    mycursor.execute(
+        "INSERT INTO Teams (name, coach, founded_year) VALUES (%s, %s, %s)",
+        (team.name, team.coach, team.founded_year)
+    )
+mydb.commit()
+
+# her bir takımı turnuvalara ekle, eğer typeları uyusuyorsa
+for team in team_objs:
+    for tourn in tournament_objs:
+        if team.stype == tourn.sport_type and rand.choice([0, 1]):
+            tourn.add_team(team)
+
+
+for tourn in tournament_objs:
+    tourn.schedule_matches()
+
+    # Insert teams into tournaments and schedule matches in the database
+for tourn in tournament_objs:
+    for t in tourn.teams:
+        # Check if the team is already inserted in the tournament
+        mycursor.execute(
+            "SELECT 1 FROM Team_tournament_participation WHERE tournament_id = %s AND team_id = %s",
+            (tourn.tournament_id, t.team_id)
+        )
+        if mycursor.fetchone() is None:
+            # If no result is found, insert the new entry
+            mycursor.execute(
+                "INSERT INTO Team_tournament_participation (tournament_id, team_id) VALUES (%s, %s)",
+                (tourn.tournament_id, t.team_id)
+            )
+
+mydb.commit()
+
+for tourn in tournament_objs:
+    for match in tourn.matches:
+        mycursor.execute(
+            "INSERT INTO Matches (tournament_id, match_date, location, teams_result) VALUES (%s, %s, %s, %s)",
+            (tourn.tournament_id,match.match_date, tourn.location,  json.dumps("a"))
+        )
+
+mydb.commit()
+
+
+# # Populate matches table
+# matches_rows = []
+# teams_in_matches = []
+# match_count = 0
 # for i, tournament in enumerate(tournaments_rows):
-#     num_teams = rand.randint(1, 6)  # Tournaments attended by each team
-#     for _ in range(num_teams):
-#         if team_count >= num_teams_total:
-#             break  # Stop when total teams reach the limit
-#         teams_rows.append({
-#             "team_id": team_count,
-#             "name": f"Team {team_count}",
-#             "coach": rand.randint(1, num_tournaments),  # Assume 1 coach per tournament
-#             "founded_year": rand.randint(1900, 2024)
+#     num_matches = rand.randint(5, 15)  # Each tournament has 5-15 matches
+#     for _ in range(num_matches):
+#         matches_rows.append({
+#             "match_id": match_count,
+#             "tournament_id": i,
+#             "match_date": datetime.date(rand.randint(1980, 2024), rand.randint(1, 12), rand.randint(1, 28)),#make sure teams arent founded after this date
+#             "location": f"Stadium {match_count}"
 #         })
-#         team_count += 1
-# # Insert teams data
-# for row in teams_rows:
+#         match_count += 1
+# # Insert matches data
+# for row in matches_rows:
 #     mycursor.execute(
-#         "INSERT INTO Teams (team_id, name, coach, founded_year) VALUES (%s, %s, %s, %s)",
-#         (row["team_id"], row["name"], row["coach"], row["founded_year"])
+#         "INSERT INTO Matches (match_id, tournament_id, referee_id, match_date, location) VALUES (%s, %s, %s, %s, %s)",
+#         (row["match_id"], row["tournament_id"], row["referee_id"], row["match_date"], row["location"])
 #     )
 # mydb.commit()
 
@@ -275,65 +335,41 @@ mydb.commit()
 # mydb.commit()
 
 
-# # Populate referees table
-# referees_rows = []
-# for ref_id in range(1, 21):  # Assume 20 referees
-#     referees_rows.append({
-#         "referee_id": ref_id,
-#         "first_name": rand.choice(names["first name"]),
-#         "last_name": rand.choice(names["last name"]),
-#         "experience_years": rand.randint(1, 30)
-#     })
-# # Insert referees data
-# for row in referees_rows:
-#     mycursor.execute(
-#         "INSERT INTO Referees (referee_id, first_name, last_name, experience_years) VALUES (%s, %s, %s, %s)",
-#         (row["referee_id"], row["first_name"], row["last_name"], row["experience_years"])
-#     )
-# mydb.commit()
+# Populate referees table
+referees_rows = []
+for ref_id in range(1, 21):  # Assume 20 referees
+    referees_rows.append({
+        "referee_id": ref_id,
+        "first_name": rand.choice(names["first name"]),
+        "last_name": rand.choice(names["last name"]),
+        "experience_years": rand.randint(1, 30)
+    })
+# Insert referees data
+for row in referees_rows:
+    mycursor.execute(
+        "INSERT INTO Referees (first_name, last_name, experience_years) VALUES (%s, %s, %s)",
+        (row["first_name"], row["last_name"], row["experience_years"])
+    )
+mydb.commit()
 
 
-# # Populate coaches table
-# coaches_rows = []
-# for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
-#     coaches_rows.append({
-#         "coach_id": coach_id,
-#         "first_name": rand.choice(names["first name"]),
-#         "last_name": rand.choice(names["last name"]),
-#         "experience_years": rand.randint(1, 30),
-#         "matches_coached": rand.randint(20, 200)
-#     })
-# # Insert coaches data
-# for row in coaches_rows:
-#     mycursor.execute(
-#         "INSERT INTO Coaches (coach_id, first_name, last_name, experience_years) VALUES (%s, %s, %s, %s)",
-#         (row["coach_id"], row["first_name"], row["last_name"], row["experience_years"])
-#     )
-# mydb.commit()
-
-
-# # Populate matches table
-# matches_rows = []
-# teams_in_matches = []
-# match_count = 0
-# for i, tournament in enumerate(tournaments_rows):
-#     num_matches = rand.randint(5, 15)  # Each tournament has 5-15 matches
-#     for _ in range(num_matches):
-#         matches_rows.append({
-#             "match_id": match_count,
-#             "tournament_id": i,
-#             "referee_id": rand.randint(1, len(referees_rows)),
-#             "match_date": datetime.date(rand.randint(1980, 2024), rand.randint(1, 12), rand.randint(1, 28)),#make sure teams arent founded after this date
-#             "location": f"Stadium {match_count}"
-#         })
-#         match_count += 1
-# # Insert matches data
-# for row in matches_rows:
-#     mycursor.execute(
-#         "INSERT INTO Matches (match_id, tournament_id, referee_id, match_date, location) VALUES (%s, %s, %s, %s, %s)",
-#         (row["match_id"], row["tournament_id"], row["referee_id"], row["match_date"], row["location"])
-#     )
-# mydb.commit()
+# Populate coaches table
+coaches_rows = []
+for coach_id in range(1, num_tournaments + 1):  # Assume 1 coach per tournament
+    coaches_rows.append({
+        "coach_id": coach_id,
+        "first_name": rand.choice(names["first name"]),
+        "last_name": rand.choice(names["last name"]),
+        "experience_years": rand.randint(1, 30),
+        "matches_coached": rand.randint(20, 200)
+    })
+# Insert coaches data
+for row in coaches_rows:
+    mycursor.execute(
+        "INSERT INTO Coaches (first_name, last_name, experience_years) VALUES (%s, %s, %s)",
+        (row["first_name"], row["last_name"], row["experience_years"])
+    )
+mydb.commit()
 
 
 # # Populate match_results table
@@ -400,20 +436,32 @@ mydb.commit()
 # mydb.commit()
 
 
-# # Populate have_referees table
-# have_referees_rows = []
-# for match in matches_rows:
-#     have_referees_rows.append({
-#         "match_id": match["match_id"],
-#         "referee_id": rand.choice(referees_rows)["referee_id"]
-#     })
-# # Insert have referees data
-# for row in have_referees_rows:
-#     mycursor.execute(
-#         "INSERT INTO HAVE_REFEREES (match_id, referee_id) VALUES (%s, %s)",
-#         (row["match_id"], row["referee_id"])
-#     )
-# mydb.commit()
+# Populate have_referees table
+have_referees_rows = []
+
+
+for tourn in tournament_objs:
+    for match in tourn.matches:
+        # Select a random referee
+        referee_id = rand.choice(referees_rows)["referee_id"]
+
+        # Check if the referee is already assigned to this match
+        mycursor.execute(
+            "SELECT 1 FROM Referees_in_Match WHERE match_id = %s AND referee_id = %s",
+            (match.match_id, referee_id)
+        )
+        if mycursor.fetchone() is None:
+            # If no result is found, insert the new entry
+            mycursor.execute(
+                "INSERT INTO Referees_in_Match (match_id, referee_id) VALUES (%s, %s)",
+                (match.match_id, referee_id)
+            )
+            have_referees_rows.append({
+            "match_id": match.match_id,
+            "referee_id": rand.choice(referees_rows)["referee_id"]
+        })
+
+mydb.commit()
 
     
 # # Populate attend table
