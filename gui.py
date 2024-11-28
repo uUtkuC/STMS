@@ -8,11 +8,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 import threading
-from concurrent.futures import ThreadPoolExecutor
-import requests
-
-# Create a persistent HTTP session
-session = requests.Session()
+import asyncio
+import aiohttp
 
 # List of database tables
 dbTables = []
@@ -29,26 +26,37 @@ edit_button = None
 
 editingEntity = False  # Tracks if the user is editing an entity
 
-# Create a thread pool executor with a limited number of worker threads
-executor = ThreadPoolExecutor(max_workers=5)
+# Create an asyncio event loop
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
-# Initialize the database connection and fetch tables
-def initialize():
-    executor.submit(initialize_thread)
+# Start the asyncio event loop in a separate thread
+def start_event_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
 
-def initialize_thread():
+event_loop_thread = threading.Thread(target=start_event_loop, args=(loop,), daemon=True)
+event_loop_thread.start()
+
+# Asynchronous functions for network operations
+async def async_get_tables():
+    global dbTables
     try:
-        global dbTables
-        response = session.get('http://localhost:5000/tables', timeout=10)
-        if response.status_code == 200:
-            dbTables = response.json()['tables']
-            # Update the table_listbox in the main thread
-            root.after(0, populate_table_listbox)
-        else:
-            error_message = response.json().get('error', 'Failed to fetch tables')
-            root.after(0, show_error_message, error_message)
-    except requests.exceptions.RequestException as e:
+        async with aiohttp.ClientSession() as session:
+            async with session.get('http://localhost:5000/tables') as response:
+                if response.status == 200:
+                    data = await response.json()
+                    dbTables = data['tables']
+                    # Update the table_listbox in the main thread
+                    root.after(0, populate_table_listbox)
+                else:
+                    error_message = (await response.json()).get('error', 'Failed to fetch tables')
+                    root.after(0, show_error_message, error_message)
+    except Exception as e:
         root.after(0, show_error_message, f"API request failed: {e}")
+
+def initialize():
+    asyncio.run_coroutine_threadsafe(async_get_tables(), loop)
 
 def populate_table_listbox():
     # Clear existing entries
@@ -90,86 +98,84 @@ def clear_fields():
 def create_attribute_fields(table_name):
     global add_button, clear_button, save_button, remove_button, edit_button
 
-    try:
-        # Clear any existing widgets in the input frame
-        for widget in input_frame.winfo_children():
-            widget.destroy()
-        entry_fields.clear()
+    # Clear any existing widgets in the input frame
+    for widget in input_frame.winfo_children():
+        widget.destroy()
+    entry_fields.clear()
 
-        # Scrollable frame for input fields
-        canvas = tk.Canvas(input_frame, height=200)
-        scrollbar = ttk.Scrollbar(input_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
+    # Scrollable frame for input fields
+    canvas = tk.Canvas(input_frame, height=200)
+    scrollbar = ttk.Scrollbar(input_frame, orient="vertical", command=canvas.yview)
+    scrollable_frame = ttk.Frame(canvas)
 
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Fetch the schema of the selected table from API
-        def fetch_schema():
-            try:
-                response = session.get(f'http://localhost:5000/schema/{table_name}', timeout=10)
-                if response.status_code == 200:
-                    columns = response.json()['schema']
-                    root.after(0, create_fields, columns)
-                else:
-                    error_message = response.json().get('error', 'Failed to fetch schema')
-                    root.after(0, show_error_message, error_message)
-            except requests.exceptions.RequestException as e:
-                root.after(0, show_error_message, f"API request failed: {e}")
+    # Fetch the schema of the selected table from API
+    async def fetch_schema():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f'http://localhost:5000/schema/{table_name}') as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        columns = data['schema']
+                        root.after(0, create_fields, columns)
+                    else:
+                        error_message = (await response.json()).get('error', 'Failed to fetch schema')
+                        root.after(0, show_error_message, error_message)
+        except Exception as e:
+            root.after(0, show_error_message, f"API request failed: {e}")
 
-        executor.submit(fetch_schema)
+    def create_fields(columns):
+        for i, col in enumerate(columns):
+            col_name = col['Field']
+            row, column = divmod(i, 2)
 
-        # Arrange fields in two columns
-        def create_fields(columns):
-            for i, col in enumerate(columns):
-                col_name = col['Field']
-                row, column = divmod(i, 2)
+            label = tk.Label(scrollable_frame, text=col_name)
+            label.grid(row=row, column=2 * column, padx=5, pady=5, sticky=tk.W)
 
-                label = tk.Label(scrollable_frame, text=col_name)
-                label.grid(row=row, column=2 * column, padx=5, pady=5, sticky=tk.W)
+            entry = tk.Entry(scrollable_frame)
+            entry.grid(row=row, column=2 * column + 1, padx=5, pady=5, sticky=tk.W)
+            entry_fields.append((col_name, entry))
 
-                entry = tk.Entry(scrollable_frame)
-                entry.grid(row=row, column=2 * column + 1, padx=5, pady=5, sticky=tk.W)
-                entry_fields.append((col_name, entry))
+        # Reset buttons
+        reset_buttons()
 
-            # Reset buttons
-            reset_buttons()
+        # Create Add and Clear buttons
+        add_button = tk.Button(input_frame, text="Add", command=add_data)
+        add_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-            # Create Add and Clear buttons
-            add_button = tk.Button(input_frame, text="Add", command=add_data)
-            add_button.pack(side=tk.LEFT, padx=5, pady=5)
+        clear_button = tk.Button(input_frame, text="Clear", command=clear_fields)
+        clear_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-            clear_button = tk.Button(input_frame, text="Clear", command=clear_fields)
-            clear_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-    except Exception as e:
-        root.after(0, show_error_message, f"Error: {e}")
+    asyncio.run_coroutine_threadsafe(fetch_schema(), loop)
 
 # Fetch table data and populate the Treeview
 def fetch_data(table_name):
-    executor.submit(fetch_data_thread, table_name)
+    async def async_fetch_data():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f'http://localhost:5000/data/{table_name}') as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        columns = data['columns']
+                        rows = data['data']
+                        # Update the treeview in the main thread
+                        root.after(0, update_treeview, columns, rows)
+                    else:
+                        error_message = (await response.json()).get('error', 'Failed to fetch data')
+                        root.after(0, show_error_message, error_message)
+        except Exception as e:
+            root.after(0, show_error_message, f"API request failed: {e}")
 
-def fetch_data_thread(table_name):
-    try:
-        response = session.get(f'http://localhost:5000/data/{table_name}', timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            columns = data['columns']
-            rows = data['data']
-            # Update the treeview in the main thread
-            root.after(0, update_treeview, columns, rows)
-        else:
-            error_message = response.json().get('error', 'Failed to fetch data')
-            root.after(0, show_error_message, error_message)
-    except requests.exceptions.RequestException as e:
-        root.after(0, show_error_message, f"API request failed: {e}")
+    asyncio.run_coroutine_threadsafe(async_fetch_data(), loop)
 
 def update_treeview(columns, rows):
     # Update the Treeview widget
@@ -183,35 +189,36 @@ def update_treeview(columns, rows):
         tree.insert("", tk.END, values=values)
 
 def add_data():
-    executor.submit(add_data_thread)
+    async def async_add_data():
+        global selected_table
+        if not selected_table:
+            return
 
-def add_data_thread():
-    global selected_table
-    if not selected_table:
-        return
+        # Collect data from input fields
+        record = {col_name: entry.get() for col_name, entry in entry_fields}
 
-    # Collect data from input fields
-    record = {col_name: entry.get() for col_name, entry in entry_fields}
+        data = {
+            'table_name': selected_table,
+            'record': record
+        }
 
-    data = {
-        'table_name': selected_table,
-        'record': record
-    }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post('http://localhost:5000/add_data', json=data) as response:
+                    if response.status == 200:
+                        message = (await response.json()).get('message', 'Data added successfully')
+                        # Show success message in main thread
+                        root.after(0, messagebox.showinfo, "Success", message)
+                        # Refresh data
+                        fetch_data(selected_table)
+                        root.after(0, clear_fields)
+                    else:
+                        error_message = (await response.json()).get('error', 'Failed to add data')
+                        root.after(0, show_error_message, error_message)
+        except Exception as e:
+            root.after(0, show_error_message, f"API request failed: {e}")
 
-    try:
-        response = session.post('http://localhost:5000/add_data', json=data, timeout=10)
-        if response.status_code == 200:
-            message = response.json().get('message', 'Data added successfully')
-            # Show success message in main thread
-            root.after(0, messagebox.showinfo, "Success", message)
-            # Refresh data
-            fetch_data(selected_table)
-            root.after(0, clear_fields)
-        else:
-            error_message = response.json().get('error', 'Failed to add data')
-            root.after(0, show_error_message, error_message)
-    except requests.exceptions.RequestException as e:
-        root.after(0, show_error_message, f"API request failed: {e}")
+    asyncio.run_coroutine_threadsafe(async_add_data(), loop)
 
 # Fill input fields with data from the selected row
 def fill_fields():
@@ -249,65 +256,67 @@ def fill_fields():
 
 # Update an existing record in the selected table
 def save_updated_data():
-    executor.submit(save_updated_data_thread)
+    async def async_save_updated_data():
+        global selected_table, selected_row
 
-def save_updated_data_thread():
-    global selected_table, selected_row
+        if not selected_table or not selected_row:
+            return
 
-    if not selected_table or not selected_row:
-        return
+        # Prepare the data payload
+        record = {col_name: entry.get() for col_name, entry in entry_fields}
+        key = {entry_fields[0][0]: selected_row[0]}  # Assuming first field is primary key
 
-    # Prepare the data payload
-    record = {col_name: entry.get() for col_name, entry in entry_fields}
-    key = {entry_fields[0][0]: selected_row[0]}  # Assuming first field is primary key
+        data = {
+            'table_name': selected_table,
+            'record': record,
+            'key': key
+        }
 
-    data = {
-        'table_name': selected_table,
-        'record': record,
-        'key': key
-    }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.put('http://localhost:5000/update_data', json=data) as response:
+                    if response.status == 200:
+                        message = (await response.json()).get('message', 'Data updated successfully')
+                        root.after(0, messagebox.showinfo, "Success", message)
+                        fetch_data(selected_table)
+                        root.after(0, clear_fields)
+                    else:
+                        error_message = (await response.json()).get('error', 'Failed to update data')
+                        root.after(0, show_error_message, error_message)
+        except Exception as e:
+            root.after(0, show_error_message, f"API request failed: {e}")
 
-    try:
-        response = session.put('http://localhost:5000/update_data', json=data, timeout=10)
-        if response.status_code == 200:
-            message = response.json().get('message', 'Data updated successfully')
-            root.after(0, messagebox.showinfo, "Success", message)
-            fetch_data(selected_table)
-            root.after(0, clear_fields)
-        else:
-            error_message = response.json().get('error', 'Failed to update data')
-            root.after(0, show_error_message, error_message)
-    except requests.exceptions.RequestException as e:
-        root.after(0, show_error_message, f"API request failed: {e}")
+    asyncio.run_coroutine_threadsafe(async_save_updated_data(), loop)
 
 # Remove the selected row from the database
 def remove_data():
-    executor.submit(remove_data_thread)
+    async def async_remove_data():
+        global selected_table, selected_row
 
-def remove_data_thread():
-    global selected_table, selected_row
+        if not selected_table or not selected_row:
+            return
 
-    if not selected_table or not selected_row:
-        return
+        key = {entry_fields[0][0]: selected_row[0]}  # Assuming first field is primary key
+        data = {
+            'table_name': selected_table,
+            'key': key
+        }
 
-    key = {entry_fields[0][0]: selected_row[0]}  # Assuming first field is primary key
-    data = {
-        'table_name': selected_table,
-        'key': key
-    }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.delete('http://localhost:5000/delete_data', json=data) as response:
+                    if response.status == 200:
+                        message = (await response.json()).get('message', 'Data deleted successfully')
+                        root.after(0, messagebox.showinfo, "Success", message)
+                        fetch_data(selected_table)
+                        root.after(0, clear_fields)
+                    else:
+                        error_message = (await response.json()).get('error', 'Failed to delete data')
+                        root.after(0, show_error_message, error_message)
+        except Exception as e:
+            root.after(0, show_error_message, f"API request failed: {e}")
 
-    try:
-        response = session.delete('http://localhost:5000/delete_data', json=data, timeout=10)
-        if response.status_code == 200:
-            message = response.json().get('message', 'Data deleted successfully')
-            root.after(0, messagebox.showinfo, "Success", message)
-            fetch_data(selected_table)
-            root.after(0, clear_fields)
-        else:
-            error_message = response.json().get('error', 'Failed to delete data')
-            root.after(0, show_error_message, error_message)
-    except requests.exceptions.RequestException as e:
-        root.after(0, show_error_message, f"API request failed: {e}")
+    asyncio.run_coroutine_threadsafe(async_remove_data(), loop)
 
 # Reset all buttons to default state
 def reset_buttons():
