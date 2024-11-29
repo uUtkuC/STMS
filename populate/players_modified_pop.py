@@ -374,7 +374,7 @@ for tourn in tournament_objs:
                     "manager_name":rand.choice(names['first name']) + rand.choice(names['last name']),
                     "total_minutes_played":experience_years*120*12,
                     "matches_played": rand.randint(0, 100),
-                    "accuracy" : round(rand.uniform(0, 100), 2),
+                    "accuracy" : 30 + round(rand.uniform(0, 69), 2),
                     "team_id":t.team_id
                 }
             players_rows.append(latest_entry)
