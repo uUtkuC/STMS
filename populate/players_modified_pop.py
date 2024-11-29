@@ -77,6 +77,8 @@ class Team:
 
     def add_player(self, player):
         self.players.append(player)
+    def __str__(self):
+        return f"{self.name}"
 
 class Player:
     def __init__(self, player_id, first_name, accuracy, last_name, date_of_birth,country_of_origin,age,market_value,salary,contract_start_date,contract_end_date,height,weight,team_captain,experience_years,manager_name,total_minutes_played,matches_played
@@ -312,9 +314,18 @@ mydb.commit()
 
 for tourn in tournament_objs:
     for match in tourn.matches:
+
+        # Generate random integers X and Y
+        X = rand.randint(0, 6)
+        Y = rand.randint(0, 6)
+        data = {
+                    f"{match.team1}": X,
+                    f"{match.team2}": Y
+                }
+
         mycursor.execute(
             "INSERT INTO Matches (tournament_id, match_date, location, teams_result) VALUES (%s, %s, %s, %s)",
-            (tourn.tournament_id,match.match_date, tourn.location,  json.dumps("a"))
+            (tourn.tournament_id,match.match_date, tourn.location,  json.dumps(data))
         )
 
 mydb.commit()
@@ -564,50 +575,60 @@ def generate_coaching_dates(founded_year):
 # List to store the rows to be inserted into Team_Coached table
 team_coached_rows = []
 
+# Set to track existing combinations of coach_id and team_id
+existing_combinations = set()
+
 # Generate the coaching assignments
 for team in team_objs:
     coach_id = team.coach
     team_id = team.team_id
     coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year)
     
-    team_coached_rows.append({
-        "coach_id": coach_id,
-        "team_id": team_id,
-        "coaching_begin_date": coaching_begin_date,
-        "coaching_end_date": coaching_end_date
-    })
+    combination = (coach_id, team_id)
+    if combination not in existing_combinations:
+        team_coached_rows.append({
+            "coach_id": coach_id,
+            "team_id": team_id,
+            "coaching_begin_date": coaching_begin_date,
+            "coaching_end_date": coaching_end_date
+        })
+        existing_combinations.add(combination)
 
-for team in team_objs[i:num_teams_total//2]:
-    
-    coach_id = rand.randint(1,num_teams_total//2)
+for team in team_objs[:num_teams_total//2]:
+    coach_id = rand.randint(1, num_teams_total//2)
     while coach_id == team.coach:
-        coach_id = rand.randint(1,num_teams_total//2) #we want different coaches
+        coach_id = rand.randint(1, num_teams_total//2)  # we want different coaches
 
     team_id = team.team_id
-    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year-3) #to make it applicable to another frunction
+    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year - 3)  # to make it applicable to another function
     
-    team_coached_rows.append({
-        "coach_id": coach_id,
-        "team_id": team_id,
-        "coaching_begin_date": coaching_begin_date,
-        "coaching_end_date": coaching_end_date
-    })  
+    combination = (coach_id, team_id)
+    if combination not in existing_combinations:
+        team_coached_rows.append({
+            "coach_id": coach_id,
+            "team_id": team_id,
+            "coaching_begin_date": coaching_begin_date,
+            "coaching_end_date": coaching_end_date
+        })
+        existing_combinations.add(combination)
 
-for team in team_objs[i:num_teams_total//4]:
-    
-    coach_id = rand.randint(1,num_teams_total//4)
+for team in team_objs[:num_teams_total]:
+    coach_id = rand.randint(1, num_teams_total//4)
     while coach_id == team.coach:
-        coach_id = rand.randint(1,num_teams_total//4) #we want different coaches
+        coach_id = rand.randint(1, num_teams_total//4)  # we want different coaches
 
     team_id = team.team_id
-    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year-3) #to make it applicable to another frunction
+    coaching_begin_date, coaching_end_date = generate_coaching_dates(team.founded_year - 3)  # to make it applicable to another function
     
-    team_coached_rows.append({
-        "coach_id": coach_id,
-        "team_id": team_id,
-        "coaching_begin_date": coaching_begin_date,
-        "coaching_end_date": coaching_end_date
-    })  
+    combination = (coach_id, team_id)
+    if combination not in existing_combinations:
+        team_coached_rows.append({
+            "coach_id": coach_id,
+            "team_id": team_id,
+            "coaching_begin_date": coaching_begin_date,
+            "coaching_end_date": coaching_end_date
+        })
+        existing_combinations.add(combination)
 
 # Insert into Team_Coached table
 for row in team_coached_rows:

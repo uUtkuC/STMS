@@ -28,7 +28,7 @@ app.logger.setLevel(logging.INFO)
 dbconfig = {
     "host": "localhost",
     "user": "root",
-    "password": "1234",
+    "password": "utku",
     "database": "stms",
     "cursorclass": pymysql.cursors.DictCursor,
     "charset": "utf8mb4",
