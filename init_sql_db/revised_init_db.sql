@@ -116,3 +116,8 @@ CREATE TABLE Referees_in_Match (
     FOREIGN KEY (referee_id) REFERENCES Referees(referee_id),
     FOREIGN KEY (match_id) REFERENCES Matches(match_id)
 );
+
+CREATE INDEX idx_team_id on Team_Tournament_Participation (team_id);
+CREATE INDEX idx_tournament_id on Team_Tournament_Participation (tournament_id);
+CREATE INDEX idx_team_match_id on Team_Match_Participation (team_id);
+CREATE INDEX idx_match_id on Team_Match_Participation (match_id);
