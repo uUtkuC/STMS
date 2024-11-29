@@ -9,8 +9,8 @@ rand.seed(42)
 
 mydb = mysql.connector.connect(
     host="localhost",
-    user="kivanc",
-    passwd="random",
+    user="root",
+    passwd="1234",
     database = "STMS"
 )
 g_match_id = 1
@@ -144,6 +144,20 @@ mycursor = mydb.cursor()
 current_pwd = os.getcwd()
 file_path = os.path.join(current_pwd, "name_surname.csv")
 print(f"Attempting to read file: {file_path}")
+
+def run_sql_script(filename):
+    with open(filename, 'r') as file:
+        sql_script = file.read()
+
+    for statement in sql_script.split(';'):
+        if statement.strip():  
+            mycursor.execute(statement)
+    mydb.commit()
+    print(f"SQL script '{filename}' successfully executed.")
+
+sql_file_path = os.path.join(current_pwd, "revised_init_db.sql")
+run_sql_script(sql_file_path)
+
 
 ################################
     # INITIALIZE VARIABLES #
