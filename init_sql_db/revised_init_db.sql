@@ -49,6 +49,7 @@ CREATE TABLE Players (
     salary DECIMAL(15, 2),
     contract_start_date DATE,
     contract_end_date DATE,
+    accuracy DECIMAL(5,2),
     height DECIMAL(5, 2),
     weight DECIMAL(5, 2),
     team_captain BOOLEAN,

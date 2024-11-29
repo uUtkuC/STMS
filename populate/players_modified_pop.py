@@ -79,10 +79,11 @@ class Team:
         self.players.append(player)
 
 class Player:
-    def __init__(self, player_id, first_name, last_name, date_of_birth,country_of_origin,age,market_value,salary,contract_start_date,contract_end_date,height,weight,team_captain,experience_years,manager_name,total_minutes_played,matches_played
+    def __init__(self, player_id, first_name, accuracy, last_name, date_of_birth,country_of_origin,age,market_value,salary,contract_start_date,contract_end_date,height,weight,team_captain,experience_years,manager_name,total_minutes_played,matches_played
 ,team_id):
         self.player_id = player_id
         self.first_name = first_name
+        self.accuracy = accuracy
         self.last_name = last_name
         self.date_of_birth = date_of_birth
         self.country_of_origin = country_of_origin
@@ -329,7 +330,6 @@ start_date = datetime(2006, 1, 1)
 end_date = datetime(2035, 12, 31)
 
 
-# Example usage
 
 # Populate players table
 players_rows = []
@@ -356,7 +356,7 @@ for tourn in tournament_objs:
             dob = datetime(rand.randint(1980, 2005), rand.randint(1, 12), rand.randint(1, 28))
             start_date_player = random_date(start_date, end_date)
             experience_years = rand.randint(5, 30)
-            players_rows.append({
+            latest_entry = {
                     "player_id": player_count,
                     "first_name": rand.choice(names["first name"]),
                     "last_name": rand.choice(names["last name"]),
@@ -372,31 +372,34 @@ for tourn in tournament_objs:
                     "team_captain": False,
                     "experience_years":experience_years,
                     "manager_name":rand.choice(names['first name']) + rand.choice(names['last name']),
-                    "total_minutes_played":experience_years*120*12,#yes this person practices for 12 hours every day for 120 days I dont care if it makes sense
+                    "total_minutes_played":experience_years*120*12,
                     "matches_played": rand.randint(0, 100),
+                    "accuracy" : round(rand.uniform(0, 100), 2),
                     "team_id":t.team_id
-                })
+                }
+            players_rows.append(latest_entry)
             # Create a Player object from the dictionary
             new_player = Player(
-                player_id=player_count,
-                first_name=rand.choice(names["first name"]),
-                last_name=rand.choice(names["last name"]),
-                date_of_birth=dob,
-                country_of_origin=rand.choice(countries),
-                age=rand.randint(18, 35),
-                market_value=rand.random() * 100000,
-                salary=rand.random() * 10000,
-                contract_start_date=start_date_player,
-                contract_end_date=random_date(start_date_player, end_date),
-                height=rand.randint(170, 220),
-                weight=rand.randint(65, 100),
-                team_captain=False, # if temp = 0, make captain
-                experience_years=experience_years,
-                manager_name=rand.choice(names['first name']) + rand.choice(names['last name']),
-                total_minutes_played=experience_years * 120 * 12,  # Yes, intense training
-                matches_played=rand.randint(0, 100),
-                team_id=t.team_id
-            )
+                    player_id=latest_entry["player_id"],
+                    first_name=latest_entry["first_name"],
+                    last_name=latest_entry["last_name"],
+                    date_of_birth=latest_entry["date_of_birth"],
+                    country_of_origin=latest_entry["country_of_origin"],
+                    age=latest_entry["age"],
+                    market_value=latest_entry["market_value"],
+                    salary=latest_entry["salary"],
+                    contract_start_date=latest_entry["contract_start_date"],
+                    contract_end_date=latest_entry["contract_end_date"],
+                    height=latest_entry["height"],
+                    weight=latest_entry["weight"],
+                    team_captain=latest_entry["team_captain"],
+                    experience_years=latest_entry["experience_years"],
+                    manager_name=latest_entry["manager_name"],
+                    total_minutes_played=latest_entry["total_minutes_played"],
+                    matches_played=latest_entry["matches_played"],
+                    accuracy=latest_entry["accuracy"],
+                    team_id=latest_entry["team_id"]
+                )
             if temp == 0:
                 new_player.team_captain = True
             temp = temp+1
@@ -410,12 +413,12 @@ for tourn in tournament_objs:
         for p in t.players:
               mycursor.execute(
                 "INSERT INTO Players (first_name, last_name, date_of_birth, team_id, country_of_origin, "
-                "age, market_value, salary, contract_start_date, contract_end_date, height, weight, "
+                "age, market_value, salary, contract_start_date, contract_end_date, accuracy, height, weight, "
                 "team_captain, experience_years, manager_name, total_minutes_played, matches_played) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     p.first_name, p.last_name, p.date_of_birth, t.team_id, p.country_of_origin,
-                    p.age, p.market_value, p.salary, p.contract_start_date, p.contract_end_date, p.height,
+                    p.age, p.market_value, p.salary, p.contract_start_date, p.contract_end_date, p.accuracy, p.height,
                     p.weight, p.team_captain, p.experience_years, p.manager_name, p.total_minutes_played, 
                     p.matches_played
                 )
