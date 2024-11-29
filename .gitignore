@@ -1,0 +1,8 @@
+# Tüm .log dosyalarını hariç tut
+*.log
+
+# Belirli bir klasörü hariç tut
+logs/
+
+# api.log adlı dosyayı hariç tut
+api.log
