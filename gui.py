@@ -11,6 +11,14 @@ import asyncio
 import aiohttp
 import threading
 
+# Create the Tkinter root window before creating Tkinter variables
+root = tk.Tk()
+root.title("STMS Database Management Tool")
+root.geometry("1000x600")
+
+# Now it's safe to create Tkinter variables
+use_regex = tk.BooleanVar(value=False)  # Tracks regex usage
+
 # List of database tables
 dbTables = []
 entry_fields = []  # Stores dynamic input fields
@@ -24,6 +32,7 @@ save_button = None
 remove_button = None
 edit_button = None
 search_button = None
+regex_checkbox = None
 
 editingEntity = False  # Tracks if the user is editing an entity
 
@@ -73,7 +82,7 @@ def show_error_message(error_text):
 # Clear input fields and reset buttons to default state
 def clear_fields():
     global selected_row, editingEntity
-    global add_button, clear_button, save_button, remove_button, edit_button, search_button
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
 
     selected_row = None
     editingEntity = False
@@ -98,6 +107,9 @@ def clear_fields():
     clear_button = tk.Button(input_frame, text="Clear", command=clear_fields)
     clear_button.pack(side=tk.LEFT, padx=5, pady=5)
 
+    regex_checkbox = tk.Checkbutton(input_frame, text="Regex", variable=use_regex, onvalue=True, offvalue=False)
+    regex_checkbox.pack(side=tk.LEFT, padx=5, pady=5)
+
     fetch_data(selected_table)
 
 # Function to search and filter data based on input fields
@@ -114,6 +126,9 @@ def search_data():
         value = entry.get().strip()
         if value:  # Only add conditions for non-empty fields
             search_params[col_name] = value
+
+    # Include regex usage flag
+    search_params['use_regex'] = use_regex.get()
 
     # Send the search request to the API
     asyncio.run_coroutine_threadsafe(search_data_async(selected_table, search_params), loop)
@@ -135,7 +150,7 @@ async def search_data_async(table_name, search_params):
 
 # Update create_attribute_fields to include Search button
 def create_attribute_fields(table_name):
-    global add_button, clear_button, save_button, remove_button, edit_button, search_button
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
 
     # Clear any existing widgets in the input frame
     for widget in input_frame.winfo_children():
@@ -175,7 +190,7 @@ async def fetch_schema_async(table_name, scrollable_frame):
         root.after(0, show_error_message, f"API request failed: {e}")
 
 def create_fields(columns, scrollable_frame):
-    global add_button, clear_button, save_button, remove_button, edit_button, search_button
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
     for i, col in enumerate(columns):
         col_name = col['Field']
         row, column = divmod(i, 2)
@@ -190,7 +205,7 @@ def create_fields(columns, scrollable_frame):
     # Reset buttons
     reset_buttons()
 
-    # Create Search, Add and Clear buttons
+    # Create Search, Add, Clear buttons, and Regex checkbox
     search_button = tk.Button(input_frame, text="Search", command=search_data)
     search_button.pack(side=tk.LEFT, padx=5, pady=5)
 
@@ -199,6 +214,9 @@ def create_fields(columns, scrollable_frame):
 
     clear_button = tk.Button(input_frame, text="Clear", command=clear_fields)
     clear_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+    regex_checkbox = tk.Checkbutton(input_frame, text="Regex", variable=use_regex, onvalue=True, offvalue=False)
+    regex_checkbox.pack(side=tk.LEFT, padx=5, pady=5)
 
 # Fetch table data and populate the Treeview
 def fetch_data(table_name):
@@ -363,7 +381,7 @@ async def remove_data_async(data):
 
 # Reset all buttons to default state
 def reset_buttons():
-    global add_button, clear_button, save_button, remove_button, edit_button, search_button
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
 
     if add_button:
         add_button.pack_forget()
@@ -377,6 +395,8 @@ def reset_buttons():
         edit_button.pack_forget()
     if search_button:
         search_button.pack_forget()
+    if regex_checkbox:
+        regex_checkbox.pack_forget()
 
 # Handle table selection from the listbox
 def on_table_select(event):
@@ -408,7 +428,7 @@ def clear_tree_selection(event):
 # Update buttons when a row in Treeview is selected
 def show_update_button(event):
     global selected_row, selected_table
-    global add_button, clear_button, save_button, remove_button, edit_button, search_button
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
 
     if not selected_table:
         return
@@ -428,11 +448,6 @@ def show_update_button(event):
 
     remove_button = tk.Button(input_frame, text="Remove", command=remove_data)
     remove_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-# Tkinter GUI setup
-root = tk.Tk()
-root.title("STMS Database Management Tool")
-root.geometry("1000x600")
 
 # Left section: Listbox for tables
 table_listbox = tk.Listbox(root, height=30, width=30)
@@ -459,6 +474,7 @@ remove_button = tk.Button(input_frame, text="Remove", command=remove_data)
 clear_button = tk.Button(input_frame, text="Clear", command=clear_fields)
 edit_button = tk.Button(input_frame, text="Edit", command=fill_fields)
 search_button = tk.Button(input_frame, text="Search", command=search_data)
+regex_checkbox = tk.Checkbutton(input_frame, text="Regex", variable=use_regex, onvalue=True, offvalue=False)
 
 # Bind click event to clear Treeview selection when clicking outside
 root.bind("<Button-1>", clear_tree_selection)

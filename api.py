@@ -28,7 +28,7 @@ app.logger.setLevel(logging.INFO)
 dbconfig = {
     "host": "localhost",
     "user": "root",
-    "password": "utku",
+    "password": "1234",
     "database": "stms",
     "cursorclass": pymysql.cursors.DictCursor,
     "charset": "utf8mb4",
@@ -235,37 +235,55 @@ def delete_data():
 # Endpoint to search data in a table
 @app.route('/search/<table_name>', methods=['POST'])
 def search_data(table_name):
-    search_params = request.json  # Expecting a JSON object with search parameters
-    app.logger.info(f"Searching data in table {table_name} with parameters {search_params}")
+    data = request.json  # Expecting a JSON object with search parameters
+    use_regex = data.pop('use_regex', False)
 
     connection = get_db_connection()
     if connection is None:
-        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
-            # Build WHERE clause with LIKE operator for partial matching
+            # Fetch column types
+            cursor.execute(f"DESCRIBE `{table_name}`;")
+            columns_info = cursor.fetchall()
+            columns = [col['Field'] for col in columns_info]
+            col_types = {col['Field']: col['Type'] for col in columns_info}
+
+            # Build WHERE clause
             where_clauses = []
-            for col, value in search_params.items():
-                where_clauses.append(f"`{col}` LIKE %({col})s")
-                search_params[col] = f"%{value}%"  # Add wildcards for partial matching
+            params = {}
+            for col, value in data.items():
+                col_type = col_types.get(col, '')
+                if any(op in value for op in ['>=', '<=', '>', '<']):
+                    # Handle numeric comparisons
+                    operator = ''
+                    for op in ['>=', '<=', '>', '<']:
+                        if op in value:
+                            operator = op
+                            break
+                    number = value.replace(operator, '').strip()
+                    where_clauses.append(f"`{col}` {operator} %({col})s")
+                    params[col] = number
+                else:
+                    if use_regex:
+                        where_clauses.append(f"`{col}` LIKE %({col})s")
+                        params[col] = f"%{value}%"
+                    else:
+                        where_clauses.append(f"`{col}` = %({col})s")
+                        params[col] = value
 
             where_clause = " AND ".join(where_clauses)
             sql = f"SELECT * FROM `{table_name}`"
             if where_clause:
                 sql += f" WHERE {where_clause}"
 
-            cursor.execute(sql, search_params)
+            cursor.execute(sql, params)
             rows = cursor.fetchall()
 
-            cursor.execute(f"DESCRIBE `{table_name}`;")
-            columns_info = cursor.fetchall()
-            columns = [col['Field'] for col in columns_info]
-
-        data = [row for row in rows]  # Rows are dictionaries
-        return jsonify({'columns': columns, 'data': data}), 200
+            # Prepare the response
+            data = [row for row in rows]
+            return jsonify({'columns': columns, 'data': data}), 200
     except Exception as e:
-        app.logger.error(f"Error searching data in table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
