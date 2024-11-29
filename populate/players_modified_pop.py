@@ -373,7 +373,7 @@ for tourn in tournament_objs:
                     "experience_years":experience_years,
                     "manager_name":rand.choice(names['first name']) + rand.choice(names['last name']),
                     "total_minutes_played":experience_years*120*12,
-                    "matches_played": rand.randint(0, 100),
+                    "matches_played": 30 + rand.randint(0, 70),
                     "accuracy" : round(rand.uniform(0, 100), 2),
                     "team_id":t.team_id
                 }
