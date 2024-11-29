@@ -8,9 +8,21 @@ from flask import Flask, request, jsonify
 import pymysql
 from pymysql.err import OperationalError, MySQLError
 import threading
+import logging
+from logging.handlers import RotatingFileHandler
 from queue import Queue
 
 app = Flask(__name__)
+
+# Configure logging
+handler = RotatingFileHandler('api.log', maxBytes=1000000, backupCount=5)
+formatter = logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+)
+handler.setFormatter(formatter)
+handler.setLevel(logging.INFO)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
 
 # Database connection configuration
 dbconfig = {
@@ -39,6 +51,7 @@ class ConnectionPool:
         try:
             return self.pool.get(block=True, timeout=5)
         except Exception as e:
+            app.logger.error(f"Error getting connection from pool: {e}")
             raise
 
     def release_connection(self, connection):
@@ -50,7 +63,7 @@ class ConnectionPool:
                 new_connection = pymysql.connect(**dbconfig)
                 self.pool.put(new_connection)
         except Exception as e:
-            pass
+            app.logger.error(f"Error releasing connection back to pool: {e}")
 
 # Initialize the connection pool
 connection_pool = ConnectionPool(maxsize=10)
@@ -61,21 +74,26 @@ def get_db_connection():
         connection = connection_pool.get_connection()
         return connection
     except MySQLError as e:
+        app.logger.error(f"Error getting connection from pool: {e}")
         return None
 
 # Endpoint to fetch all tables
 @app.route('/tables', methods=['GET'])
 def get_tables():
+    app.logger.info("Received request for /tables endpoint")
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
             cursor.execute("SHOW TABLES;")
             tables = cursor.fetchall()
         table_list = [list(table.values())[0] for table in tables]
+        app.logger.info(f"Returning tables: {table_list}")
         return jsonify({'tables': table_list}), 200
     except Exception as e:
+        app.logger.error(f"Error fetching tables: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -83,8 +101,10 @@ def get_tables():
 # Endpoint to fetch data from a table
 @app.route('/data/<table_name>', methods=['GET'])
 def get_table_data(table_name):
+    app.logger.info(f"Fetching data for table: {table_name}")
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
@@ -98,6 +118,7 @@ def get_table_data(table_name):
         data = [row for row in rows]  # Rows are dictionaries
         return jsonify({'columns': columns, 'data': data}), 200
     except Exception as e:
+        app.logger.error(f"Error fetching data for table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -105,8 +126,10 @@ def get_table_data(table_name):
 # Endpoint to get table schema
 @app.route('/schema/<table_name>', methods=['GET'])
 def get_table_schema(table_name):
+    app.logger.info(f"Fetching schema for table: {table_name}")
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
@@ -116,6 +139,7 @@ def get_table_schema(table_name):
                     'Default': col['Default'], 'Extra': col['Extra']} for col in schema]
         return jsonify({'schema': columns}), 200
     except Exception as e:
+        app.logger.error(f"Error fetching schema for table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -126,12 +150,14 @@ def add_data():
     data = request.json
     table_name = data.get('table_name')
     record = data.get('record')
+    app.logger.info(f"Adding data to table {table_name}: {record}")
 
     if not table_name or not record:
         return jsonify({'error': 'Invalid data'}), 400
 
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
@@ -139,8 +165,10 @@ def add_data():
             placeholders = ', '.join(f"%({col})s" for col in record.keys())
             sql = f"INSERT INTO `{table_name}` ({columns}) VALUES ({placeholders});"
             cursor.execute(sql, record)
+        app.logger.info(f"Data added to table {table_name}")
         return jsonify({'message': 'Data added successfully'}), 200
     except Exception as e:
+        app.logger.error(f"Error adding data to table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -152,12 +180,14 @@ def update_data():
     table_name = data.get('table_name')
     record = data.get('record')
     key = data.get('key')  # {'column_name': 'value'}
+    app.logger.info(f"Updating data in table {table_name}: {record} with key {key}")
 
     if not table_name or not record or not key:
         return jsonify({'error': 'Invalid data'}), 400
 
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
@@ -166,8 +196,10 @@ def update_data():
             params = {**record, **key}
             sql = f"UPDATE `{table_name}` SET {set_clause} WHERE {where_clause};"
             cursor.execute(sql, params)
+        app.logger.info(f"Data updated in table {table_name}")
         return jsonify({'message': 'Data updated successfully'}), 200
     except Exception as e:
+        app.logger.error(f"Error updating data in table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -178,20 +210,24 @@ def delete_data():
     data = request.json
     table_name = data.get('table_name')
     key = data.get('key')  # {'column_name': 'value'}
+    app.logger.info(f"Deleting data from table {table_name} with key {key}")
 
     if not table_name or not key:
         return jsonify({'error': 'Invalid data'}), 400
 
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
             where_clause = ' AND '.join(f"`{col}` = %({col})s" for col in key.keys())
             sql = f"DELETE FROM `{table_name}` WHERE {where_clause};"
             cursor.execute(sql, key)
+        app.logger.info(f"Data deleted from table {table_name}")
         return jsonify({'message': 'Data deleted successfully'}), 200
     except Exception as e:
+        app.logger.error(f"Error deleting data from table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -200,9 +236,11 @@ def delete_data():
 @app.route('/search/<table_name>', methods=['POST'])
 def search_data(table_name):
     search_params = request.json  # Expecting a JSON object with search parameters
+    app.logger.info(f"Searching data in table {table_name} with parameters {search_params}")
 
     connection = get_db_connection()
     if connection is None:
+        app.logger.error("Failed to connect to the database")
         return jsonify({'error': 'Failed to connect to the database'}), 500
     try:
         with connection.cursor() as cursor:
@@ -227,6 +265,7 @@ def search_data(table_name):
         data = [row for row in rows]  # Rows are dictionaries
         return jsonify({'columns': columns, 'data': data}), 200
     except Exception as e:
+        app.logger.error(f"Error searching data in table {table_name}: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         connection_pool.release_connection(connection)
@@ -234,6 +273,7 @@ def search_data(table_name):
 # Error handler to catch all exceptions and return JSON responses
 @app.errorhandler(Exception)
 def handle_exception(e):
+    app.logger.error(f"Unhandled exception: {e}")
     return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':

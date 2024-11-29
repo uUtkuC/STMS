@@ -133,6 +133,7 @@ async def search_data_async(table_name, search_params):
     except Exception as e:
         root.after(0, show_error_message, f"API request failed: {e}")
 
+# Update create_attribute_fields to include Search button
 def create_attribute_fields(table_name):
     global add_button, clear_button, save_button, remove_button, edit_button, search_button
 
@@ -145,7 +146,6 @@ def create_attribute_fields(table_name):
     canvas = tk.Canvas(input_frame, height=200)
     scrollbar = ttk.Scrollbar(input_frame, orient="vertical", command=canvas.yview)
     scrollable_frame = ttk.Frame(canvas)
-    input_frame.scrollable_frame = scrollable_frame  # Attach to input_frame
 
     scrollable_frame.bind(
         "<Configure>",
@@ -158,29 +158,24 @@ def create_attribute_fields(table_name):
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     # Fetch the schema of the selected table from API
-    asyncio.run_coroutine_threadsafe(fetch_schema_async(table_name), loop)
+    asyncio.run_coroutine_threadsafe(fetch_schema_async(table_name, scrollable_frame), loop)
 
-# Update fetch_schema_async to not pass scrollable_frame
-async def fetch_schema_async(table_name):
+async def fetch_schema_async(table_name, scrollable_frame):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f'http://localhost:5000/schema/{table_name}') as response:
                 if response.status == 200:
                     data = await response.json()
                     columns = data['schema']
-                    root.after(0, create_fields, columns)  # Do not pass scrollable_frame
+                    root.after(0, create_fields, columns, scrollable_frame)
                 else:
                     error_message = (await response.json()).get('error', 'Failed to fetch schema')
                     root.after(0, show_error_message, error_message)
     except Exception as e:
         root.after(0, show_error_message, f"API request failed: {e}")
 
-# Update create_fields to access scrollable_frame via input_frame
-def create_fields(columns):
+def create_fields(columns, scrollable_frame):
     global add_button, clear_button, save_button, remove_button, edit_button, search_button
-
-    scrollable_frame = input_frame.scrollable_frame  # Access from input_frame
-
     for i, col in enumerate(columns):
         col_name = col['Field']
         row, column = divmod(i, 2)
