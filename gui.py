@@ -157,6 +157,26 @@ def create_attribute_fields(table_name):
         widget.destroy()
     entry_fields.clear()
 
+    # Fetch the schema of the selected table from API
+    asyncio.run_coroutine_threadsafe(fetch_schema_async(table_name), loop)
+
+async def fetch_schema_async(table_name):
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'http://localhost:5000/schema/{table_name}') as response:
+                if response.status == 200:
+                    data = await response.json()
+                    columns = data['schema']
+                    root.after(0, create_fields, columns)
+                else:
+                    error_message = (await response.json()).get('error', 'Failed to fetch schema')
+                    root.after(0, show_error_message, error_message)
+    except Exception as e:
+        root.after(0, show_error_message, f"API request failed: {e}")
+
+def create_fields(columns):
+    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
+
     # Scrollable frame for input fields
     canvas = tk.Canvas(input_frame, height=200)
     scrollbar = ttk.Scrollbar(input_frame, orient="vertical", command=canvas.yview)
@@ -172,25 +192,6 @@ def create_attribute_fields(table_name):
     canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-    # Fetch the schema of the selected table from API
-    asyncio.run_coroutine_threadsafe(fetch_schema_async(table_name, scrollable_frame), loop)
-
-async def fetch_schema_async(table_name, scrollable_frame):
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f'http://localhost:5000/schema/{table_name}') as response:
-                if response.status == 200:
-                    data = await response.json()
-                    columns = data['schema']
-                    root.after(0, create_fields, columns, scrollable_frame)
-                else:
-                    error_message = (await response.json()).get('error', 'Failed to fetch schema')
-                    root.after(0, show_error_message, error_message)
-    except Exception as e:
-        root.after(0, show_error_message, f"API request failed: {e}")
-
-def create_fields(columns, scrollable_frame):
-    global add_button, clear_button, save_button, remove_button, edit_button, search_button, regex_checkbox
     for i, col in enumerate(columns):
         col_name = col['Field']
         row, column = divmod(i, 2)

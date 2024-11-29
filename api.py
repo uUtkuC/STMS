@@ -1,9 +1,3 @@
-############################################################
-#  Name: api.py
-#  Date: 28.11.2024       Authors: Ali Berk Karaarslan
-#  Description: API Server for STMS Database with Search Functionality
-############################################################
-
 from flask import Flask, request, jsonify
 import pymysql
 from pymysql.err import OperationalError, MySQLError
