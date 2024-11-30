@@ -10,7 +10,7 @@ rand.seed(42)
 mydb = mysql.connector.connect(
     host="localhost",
     user="root",
-    passwd="1234",
+    passwd="utku",
     database = "STMS"
 )
 g_match_id = 1

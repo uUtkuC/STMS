@@ -17,7 +17,7 @@ CREATE TABLE Tournaments (
     start_date DATE,
     end_date DATE,
     location VARCHAR(255),
-    FOREIGN KEY (sport_id) REFERENCES Sports(sport_id)
+    FOREIGN KEY (sport_id) REFERENCES Sports(sport_id) ON DELETE CASCADE
 );
 
 -- Coaches Table
@@ -34,7 +34,7 @@ CREATE TABLE Teams (
     coach INT,
     name VARCHAR(255) NOT NULL,
     founded_year INT,
-    FOREIGN KEY (coach) REFERENCES Coaches(coach_id)
+    FOREIGN KEY (coach) REFERENCES Coaches(coach_id) ON DELETE CASCADE
 );
 
 -- Players Table
@@ -58,7 +58,7 @@ CREATE TABLE Players (
     total_minutes_played INT,
     matches_played INT,
     team_id INT,
-    FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+    FOREIGN KEY (team_id) REFERENCES Teams(team_id) ON DELETE CASCADE
 );
 
 -- Matches Table
@@ -68,7 +68,7 @@ CREATE TABLE Matches (
     match_date DATE,
     location VARCHAR(255),
     teams_result JSON,
-    FOREIGN KEY (tournament_id) REFERENCES Tournaments(tournament_id)
+    FOREIGN KEY (tournament_id) REFERENCES Tournaments(tournament_id) ON DELETE CASCADE
 );
 
 -- Referees Table
@@ -86,8 +86,8 @@ CREATE TABLE Team_Coached (
     coaching_begin_date DATE,
     coaching_end_date DATE,
     PRIMARY KEY (coach_id, team_id),
-    FOREIGN KEY (coach_id) REFERENCES Coaches(coach_id),
-    FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+    FOREIGN KEY (coach_id) REFERENCES Coaches(coach_id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES Teams(team_id) ON DELETE CASCADE
 );
 
 -- Team_Tournament_Participation Table
@@ -95,8 +95,8 @@ CREATE TABLE Team_Tournament_Participation (
     team_id INT,
     tournament_id INT,
     PRIMARY KEY (team_id, tournament_id),
-    FOREIGN KEY (team_id) REFERENCES Teams(team_id),
-    FOREIGN KEY (tournament_id) REFERENCES Tournaments(tournament_id)
+    FOREIGN KEY (team_id) REFERENCES Teams(team_id) ON DELETE CASCADE,
+    FOREIGN KEY (tournament_id) REFERENCES Tournaments(tournament_id) ON DELETE CASCADE
 );
 
 -- Team_Match_Participation Table
@@ -104,8 +104,8 @@ CREATE TABLE Team_Match_Participation (
     team_id INT,
     match_id INT,
     PRIMARY KEY (team_id, match_id),
-    FOREIGN KEY (team_id) REFERENCES Teams(team_id),
-    FOREIGN KEY (match_id) REFERENCES Matches(match_id)
+    FOREIGN KEY (team_id) REFERENCES Teams(team_id) ON DELETE CASCADE,
+    FOREIGN KEY (match_id) REFERENCES Matches(match_id) ON DELETE CASCADE
 );
 
 -- Referees_in_Match Table
@@ -113,8 +113,8 @@ CREATE TABLE Referees_in_Match (
     referee_id INT,
     match_id INT,
     PRIMARY KEY (referee_id, match_id),
-    FOREIGN KEY (referee_id) REFERENCES Referees(referee_id),
-    FOREIGN KEY (match_id) REFERENCES Matches(match_id)
+    FOREIGN KEY (referee_id) REFERENCES Referees(referee_id) ON DELETE CASCADE,
+    FOREIGN KEY (match_id) REFERENCES Matches(match_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_team_id on Team_Tournament_Participation (team_id);
