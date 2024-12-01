@@ -118,6 +118,34 @@ CREATE TABLE Referees_in_Match (
 );
 
 CREATE INDEX idx_team_id on Team_Tournament_Participation (team_id);
-CREATE INDEX idx_tournament_id on Team_Tournament_Participation (tournament_id);
 CREATE INDEX idx_team_match_id on Team_Match_Participation (team_id);
-CREATE INDEX idx_match_id on Team_Match_Participation (match_id);
+
+-- Sports Table
+CREATE INDEX idx_sports_name ON Sports(name);
+
+-- Tournaments Table
+CREATE INDEX idx_tournaments_sport_id ON Tournaments(sport_id);
+CREATE INDEX idx_tournaments_location ON Tournaments(location);
+
+-- Coaches Table
+CREATE INDEX idx_coaches_name ON Coaches(first_name, last_name);
+
+-- Teams Table
+CREATE INDEX idx_teams_coach ON Teams(coach);
+
+-- Players Table
+CREATE INDEX idx_players_team_id ON Players(team_id);
+CREATE INDEX idx_players_dob ON Players(date_of_birth);
+
+-- Matches Table
+CREATE INDEX idx_matches_tournament_id ON Matches(tournament_id);
+CREATE INDEX idx_matches_date ON Matches(match_date);
+
+-- Referees Table
+CREATE INDEX idx_referees_experience_years ON Referees(experience_years);
+
+-- Team_Tournament_Participation Table
+CREATE INDEX idx_tournament_id ON Team_Tournament_Participation(tournament_id);
+
+-- Team_Match_Participation Table
+CREATE INDEX idx_match_id ON Team_Match_Participation(match_id);

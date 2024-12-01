@@ -1,0 +1,183 @@
+Comparison of Query Execution Times
+==================================
+
+Query: SELECT * FROM Players;
+Time in query_times_no_indices.txt: 0.076545 seconds
+Time in query_times_with_indices.txt: 0.067461 seconds
+Time Difference: -0.009084 seconds
+Percentage Increase: -11.87%
+
+Query: SELECT DISTINCT name FROM Sports;
+Time in query_times_no_indices.txt: 0.001313 seconds
+Time in query_times_with_indices.txt: 0.000702 seconds
+Time Difference: -0.000611 seconds
+Percentage Increase: -46.53%
+
+Query: SELECT name FROM Tournaments WHERE sport_id = (SELECT sport_id FROM Sports WHERE name = 'basketball');
+Time in query_times_no_indices.txt: 0.000847 seconds
+Time in query_times_with_indices.txt: 0.000580 seconds
+Time Difference: -0.000267 seconds
+Percentage Increase: -31.52%
+
+Query: SELECT * FROM Coaches;
+Time in query_times_no_indices.txt: 0.000872 seconds
+Time in query_times_with_indices.txt: 0.000705 seconds
+Time Difference: -0.000167 seconds
+Percentage Increase: -19.15%
+
+Query: SELECT * FROM Sports WHERE name = 'basketball';
+Time in query_times_no_indices.txt: 0.000317 seconds
+Time in query_times_with_indices.txt: 0.000282 seconds
+Time Difference: -0.000035 seconds
+Percentage Increase: -11.04%
+
+Query: SELECT team_id, COUNT(*) AS num_players FROM Players GROUP BY team_id;
+Time in query_times_no_indices.txt: 0.002228 seconds
+Time in query_times_with_indices.txt: 0.001822 seconds
+Time Difference: -0.000406 seconds
+Percentage Increase: -18.22%
+
+Query: SELECT sport_id, COUNT(*) AS num_tournaments FROM Tournaments GROUP BY sport_id;
+Time in query_times_no_indices.txt: 0.000399 seconds
+Time in query_times_with_indices.txt: 0.000350 seconds
+Time Difference: -0.000049 seconds
+Percentage Increase: -12.28%
+
+Query: SELECT first_name, last_name FROM Players WHERE date_of_birth < '1993-01-01';
+Time in query_times_no_indices.txt: 0.006502 seconds
+Time in query_times_with_indices.txt: 0.005622 seconds
+Time Difference: -0.000880 seconds
+Percentage Increase: -13.53%
+
+Query: SELECT first_name, last_name FROM Players WHERE team_id = (SELECT team_id FROM Teams WHERE team_id = '3');
+Time in query_times_no_indices.txt: 0.000706 seconds
+Time in query_times_with_indices.txt: 0.000564 seconds
+Time Difference: -0.000142 seconds
+Percentage Increase: -20.11%
+
+Query: SELECT match_id FROM Matches as m WHERE m.tournament_id = (SELECT tournament_id FROM Tournaments as t WHERE t.name = 'Tournament 2');
+Time in query_times_no_indices.txt: 0.000679 seconds
+Time in query_times_with_indices.txt: 0.000496 seconds
+Time Difference: -0.000183 seconds
+Percentage Increase: -26.95%
+
+Query: SELECT name FROM Tournaments WHERE location = 'Sivas';
+Time in query_times_no_indices.txt: 0.000329 seconds
+Time in query_times_with_indices.txt: 0.000294 seconds
+Time Difference: -0.000035 seconds
+Percentage Increase: -10.64%
+
+Query: SELECT name FROM Teams WHERE coach = (SELECT coach_id FROM Coaches WHERE first_name = 'Suzann' AND last_name = 'Robbins');
+Time in query_times_no_indices.txt: 0.000497 seconds
+Time in query_times_with_indices.txt: 0.000300 seconds
+Time Difference: -0.000197 seconds
+Percentage Increase: -39.64%
+
+Query: SELECT first_name, last_name FROM Referees WHERE experience_years > 5;
+Time in query_times_no_indices.txt: 0.000491 seconds
+Time in query_times_with_indices.txt: 0.000380 seconds
+Time Difference: -0.000111 seconds
+Percentage Increase: -22.61%
+
+Query: SELECT * FROM tournaments, sports WHERE tournaments.sport_id = sports.sport_id ORDER BY tournament_id ASC;
+Time in query_times_no_indices.txt: 0.000802 seconds
+Time in query_times_with_indices.txt: 0.000786 seconds
+Time Difference: -0.000016 seconds
+Percentage Increase: -2.00%
+
+Query: SELECT player_id, first_name, last_name FROM Players WHERE age > 25 AND market_value > 10000;
+Time in query_times_no_indices.txt: 0.005857 seconds
+Time in query_times_with_indices.txt: 0.006010 seconds
+Time Difference: 0.000153 seconds
+Percentage Increase: 2.61%
+
+Query: SELECT name FROM Sports WHERE sport_id IN (SELECT sport_id FROM Tournaments WHERE start_date BETWEEN '2023-01-01' AND '2023-12-31');
+Time in query_times_no_indices.txt: 0.000371 seconds
+Time in query_times_with_indices.txt: 0.000478 seconds
+Time Difference: 0.000107 seconds
+Percentage Increase: 28.84%
+
+Query: SELECT COUNT(*) AS total_matches FROM Matches WHERE match_date < '2024-11-01';
+Time in query_times_no_indices.txt: 0.000716 seconds
+Time in query_times_with_indices.txt: 0.000650 seconds
+Time Difference: -0.000066 seconds
+Percentage Increase: -9.22%
+
+Query: SELECT team_id, name FROM Teams WHERE team_id NOT IN (SELECT team_id FROM Team_Tournament_Participation WHERE tournament_id = 5);
+Time in query_times_no_indices.txt: 0.000773 seconds
+Time in query_times_with_indices.txt: 0.001052 seconds
+Time Difference: 0.000279 seconds
+Percentage Increase: 36.09%
+
+Query: SELECT referee_id, first_name, last_name FROM Referees WHERE referee_id NOT IN (SELECT referee_id FROM Referees_in_Match WHERE match_id = 3);
+Time in query_times_no_indices.txt: 0.000515 seconds
+Time in query_times_with_indices.txt: 0.000652 seconds
+Time Difference: 0.000137 seconds
+Percentage Increase: 26.60%
+
+Query: SELECT DISTINCT location, matches.match_id FROM Matches WHERE match_date BETWEEN '2020-11-01' AND '2024-11-30';
+Time in query_times_no_indices.txt: 0.001550 seconds
+Time in query_times_with_indices.txt: 0.000865 seconds
+Time Difference: -0.000685 seconds
+Percentage Increase: -44.19%
+
+Query: SELECT tournament_id, COUNT(*) AS num_matches FROM Matches GROUP BY tournament_id;
+Time in query_times_no_indices.txt: 0.000649 seconds
+Time in query_times_with_indices.txt: 0.000789 seconds
+Time Difference: 0.000140 seconds
+Percentage Increase: 21.57%
+
+Query: SELECT team_id, SUM(total_minutes_played) AS total_played_minutes FROM Players GROUP BY team_id;
+Time in query_times_no_indices.txt: 0.009599 seconds
+Time in query_times_with_indices.txt: 0.009745 seconds
+Time Difference: 0.000146 seconds
+Percentage Increase: 1.52%
+
+Query: SELECT team_id, name FROM Teams WHERE founded_year < 2000;
+Time in query_times_no_indices.txt: 0.000507 seconds
+Time in query_times_with_indices.txt: 0.000709 seconds
+Time Difference: 0.000202 seconds
+Percentage Increase: 39.84%
+
+Query: SELECT team_id, name FROM Teams WHERE coach IN (SELECT coach_id FROM Coaches WHERE experience_years > 10);
+Time in query_times_no_indices.txt: 0.000936 seconds
+Time in query_times_with_indices.txt: 0.000867 seconds
+Time Difference: -0.000069 seconds
+Percentage Increase: -7.37%
+
+Query: SELECT team_id, AVG(salary) AS average_salary FROM Players GROUP BY team_id;
+Time in query_times_no_indices.txt: 0.007724 seconds
+Time in query_times_with_indices.txt: 0.008032 seconds
+Time Difference: 0.000308 seconds
+Percentage Increase: 3.99%
+
+Query: SELECT referee_id, COUNT(*) AS total_matches FROM Referees_in_Match GROUP BY referee_id;
+Time in query_times_no_indices.txt: 0.000732 seconds
+Time in query_times_with_indices.txt: 0.000576 seconds
+Time Difference: -0.000156 seconds
+Percentage Increase: -21.31%
+
+Query: SELECT player_id, first_name, last_name FROM Players WHERE team_captain = TRUE;
+Time in query_times_no_indices.txt: 0.003393 seconds
+Time in query_times_with_indices.txt: 0.003263 seconds
+Time Difference: -0.000130 seconds
+Percentage Increase: -3.83%
+
+Query: SELECT COUNT(p.team_id) FROM Players as p, Teams as t WHERE p.team_id = t.team_id GROUP BY p.team_id;
+Time in query_times_no_indices.txt: 0.003912 seconds
+Time in query_times_with_indices.txt: 0.002545 seconds
+Time Difference: -0.001367 seconds
+Percentage Increase: -34.94%
+
+Query: SELECT player_id, first_name, last_name FROM Players WHERE team_id IN (SELECT team_id FROM Teams WHERE coach IN (SELECT coach_id FROM Coaches WHERE first_name = 'Beckie' AND last_name = 'Calhoun'));
+Time in query_times_no_indices.txt: 0.000567 seconds
+Time in query_times_with_indices.txt: 0.000649 seconds
+Time Difference: 0.000082 seconds
+Percentage Increase: 14.46%
+
+Query: SELECT team_id, COUNT(DISTINCT player_id) AS total_players FROM Players GROUP BY team_id HAVING total_players < 5;
+Time in query_times_no_indices.txt: 0.002448 seconds
+Time in query_times_with_indices.txt: 0.002461 seconds
+Time Difference: 0.000013 seconds
+Percentage Increase: 0.53%
+

@@ -1,0 +1,90 @@
+Query: SELECT * FROM Players;
+Execution Time: 0.076545 seconds
+
+Query: SELECT DISTINCT name FROM Sports;
+Execution Time: 0.001313 seconds
+
+Query: SELECT name FROM Tournaments WHERE sport_id = (SELECT sport_id FROM Sports WHERE name = 'basketball');
+Execution Time: 0.000847 seconds
+
+Query: SELECT * FROM Coaches;
+Execution Time: 0.000872 seconds
+
+Query: SELECT * FROM Sports WHERE name = 'basketball';
+Execution Time: 0.000317 seconds
+
+Query: SELECT team_id, COUNT(*) AS num_players FROM Players GROUP BY team_id;
+Execution Time: 0.002228 seconds
+
+Query: SELECT sport_id, COUNT(*) AS num_tournaments FROM Tournaments GROUP BY sport_id;
+Execution Time: 0.000399 seconds
+
+Query: SELECT first_name, last_name FROM Players WHERE date_of_birth < '1993-01-01';
+Execution Time: 0.006502 seconds
+
+Query: SELECT first_name, last_name FROM Players WHERE team_id = (SELECT team_id FROM Teams WHERE team_id = '3');
+Execution Time: 0.000706 seconds
+
+Query: SELECT match_id FROM Matches as m WHERE m.tournament_id = (SELECT tournament_id FROM Tournaments as t WHERE t.name = 'Tournament 2');
+Execution Time: 0.000679 seconds
+
+Query: SELECT name FROM Tournaments WHERE location = 'Sivas';
+Execution Time: 0.000329 seconds
+
+Query: SELECT name FROM Teams WHERE coach = (SELECT coach_id FROM Coaches WHERE first_name = 'Suzann' AND last_name = 'Robbins');
+Execution Time: 0.000497 seconds
+
+Query: SELECT first_name, last_name FROM Referees WHERE experience_years > 5;
+Execution Time: 0.000491 seconds
+
+Query: SELECT * FROM tournaments, sports WHERE tournaments.sport_id = sports.sport_id ORDER BY tournament_id ASC;
+Execution Time: 0.000802 seconds
+
+Query: SELECT player_id, first_name, last_name FROM Players WHERE age > 25 AND market_value > 10000;
+Execution Time: 0.005857 seconds
+
+Query: SELECT name FROM Sports WHERE sport_id IN (SELECT sport_id FROM Tournaments WHERE start_date BETWEEN '2023-01-01' AND '2023-12-31');
+Execution Time: 0.000371 seconds
+
+Query: SELECT COUNT(*) AS total_matches FROM Matches WHERE match_date < '2024-11-01';
+Execution Time: 0.000716 seconds
+
+Query: SELECT team_id, name FROM Teams WHERE team_id NOT IN (SELECT team_id FROM Team_Tournament_Participation WHERE tournament_id = 5);
+Execution Time: 0.000773 seconds
+
+Query: SELECT referee_id, first_name, last_name FROM Referees WHERE referee_id NOT IN (SELECT referee_id FROM Referees_in_Match WHERE match_id = 3);
+Execution Time: 0.000515 seconds
+
+Query: SELECT DISTINCT location, matches.match_id FROM Matches WHERE match_date BETWEEN '2020-11-01' AND '2024-11-30';
+Execution Time: 0.001550 seconds
+
+Query: SELECT tournament_id, COUNT(*) AS num_matches FROM Matches GROUP BY tournament_id;
+Execution Time: 0.000649 seconds
+
+Query: SELECT team_id, SUM(total_minutes_played) AS total_played_minutes FROM Players GROUP BY team_id;
+Execution Time: 0.009599 seconds
+
+Query: SELECT team_id, name FROM Teams WHERE founded_year < 2000;
+Execution Time: 0.000507 seconds
+
+Query: SELECT team_id, name FROM Teams WHERE coach IN (SELECT coach_id FROM Coaches WHERE experience_years > 10);
+Execution Time: 0.000936 seconds
+
+Query: SELECT team_id, AVG(salary) AS average_salary FROM Players GROUP BY team_id;
+Execution Time: 0.007724 seconds
+
+Query: SELECT referee_id, COUNT(*) AS total_matches FROM Referees_in_Match GROUP BY referee_id;
+Execution Time: 0.000732 seconds
+
+Query: SELECT player_id, first_name, last_name FROM Players WHERE team_captain = TRUE;
+Execution Time: 0.003393 seconds
+
+Query: SELECT COUNT(p.team_id) FROM Players as p, Teams as t WHERE p.team_id = t.team_id GROUP BY p.team_id;
+Execution Time: 0.003912 seconds
+
+Query: SELECT player_id, first_name, last_name FROM Players WHERE team_id IN (SELECT team_id FROM Teams WHERE coach IN (SELECT coach_id FROM Coaches WHERE first_name = 'Beckie' AND last_name = 'Calhoun'));
+Execution Time: 0.000567 seconds
+
+Query: SELECT team_id, COUNT(DISTINCT player_id) AS total_players FROM Players GROUP BY team_id HAVING total_players < 5;
+Execution Time: 0.002448 seconds
+
